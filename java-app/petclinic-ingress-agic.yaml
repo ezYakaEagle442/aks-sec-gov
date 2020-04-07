@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1beta1 # extensions/v1beta1
+kind: Ingress
+metadata:
+  name: petclinic
+  #namespace: staging
+  # annotations:
+  #  kubernetes.io/ingress.class: nginx  
+  annotations: kubernetes.io/ingress.class: azure/application-gateway
+  appgw.ingress.kubernetes.io/use-private-ip: "true"
+spec:
+  rules:
+  - host: petclinic.cloudapp.azure.com
+    http:
+      paths:
+      - backend:
+          serviceName: petclinic-internal-service
+          servicePort: 80
+        path: /
+      - backend:
+          serviceName: petclinic-internal-service
+          servicePort: 80
+        path: /manage/health
+      - backend:
+          serviceName: petclinic-internal-service
+          servicePort: 80
+        path: /manage/info
