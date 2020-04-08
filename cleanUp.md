@@ -9,9 +9,9 @@ az monitor log-analytics workspace delete --workspace-name $analytics_workspace_
 az group deployment delete -n $analytics_workspace_name -g $rg_name
 
 # AKS
-az aks nodepool delete --name $poc_node_pool_name --cluster-name $cluster_name -g $rg_name
 az aks nodepool delete --name $spotpool_name_max  --cluster-name $cluster_name -g $rg_name
 az aks nodepool delete --name $spotpool_name_min --cluster-name $cluster_name -g $rg_name
+az aks nodepool delete --name $poc_node_pool_name --cluster-name $cluster_name -g $rg_name
 
 az aks delete --name $cluster_name --resource-group $rg_name -y
 
@@ -65,6 +65,7 @@ az network application-gateway delete -g $rg_name -n $appgw_name
 az network public-ip delete --name $appgw_IP --subscription $subId -g $rg_name
 
 az network application-gateway delete -g $rg_name -n $appgw_agic_name
+az network public-ip delete --name $appgw_agic_IP --subscription $subId -g $rg_name
 
 # Firewall
 
