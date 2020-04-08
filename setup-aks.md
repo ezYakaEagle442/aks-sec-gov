@@ -75,6 +75,7 @@ az network vnet subnet update --name $subnet_name --network-security-group nsg-m
 ## Create AKS Cluster
 ```sh
 
+# small & cheap VM size : Basic_A1 or Standard_B1s or Standard_F2s_v2
 az aks create --name $cluster_name \
     --resource-group $rg_name \
     --service-principal $sp_id \
@@ -85,7 +86,7 @@ az aks create --name $cluster_name \
     --enable-cluster-autoscaler \
     --min-count=1 \
     --max-count=3 \
-    --node-vm-size Standard_F2s_v2 \
+    --node-vm-size Basic_A1 \
     --location $location \
     --vnet-subnet-id $subnet_id \
     --service-cidr 10.42.0.0/24 \
@@ -109,7 +110,7 @@ az aks create --name $cluster_name \
     --outbound-type userDefinedRouting \
     --enable-private-cluster \
     --enable-addons azure-policy \
-    --enable-managed-identity \ # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
+    --enable-managed-identity # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
     # --no-wait ==> When --attach-acr and --enable-managed-identity are both specified, --no-wait is not allowed, please wait until the whole operation succeeds.
 
 
@@ -203,7 +204,7 @@ az vm create --name "aks-jumpoff-vm" \
     --size Standard_F2s_v2 \
     --zone 1 \
     --location $location \
-    --ssh-key-values ~/.ssh/$ssh_key
+    --ssh-key-values ~/.ssh/$ssh_key.pub
     # --generate-ssh-keys
 
 ls -al ~/.ssh/

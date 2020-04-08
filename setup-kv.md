@@ -76,7 +76,8 @@ az keyvault secret show --vault-name $vault_name --name $vault_secret --output t
 az vm create --name "kv-test-vm" \
     --image UbuntuLTS \
     --admin-username "kv_admin" \
-    --generate-ssh-keys \
+    --ssh-key-values ~/.ssh/$ssh_key.pub \
+    # --generate-ssh-keys
     --resource-group $rg_kv_name \
     --vnet-name $kv_vnet_name \
     --subnet $kv_subnet_name \

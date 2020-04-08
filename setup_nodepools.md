@@ -60,7 +60,7 @@ To know before you start:
 # 2) The instance won't be evicted based on price.
 # 3) The price for the instance will be the current price for Spot or the price for a standard instance, which ever is less, as long as there is capacity and quota available.
 
-# if the value is set to 0.85421 it would be a max price of $0.85421 USD per hour.
+# if the value is set to $0.846 it would be a max price of $0.846 USD per hour.
 az extension update --name aks-preview
 az feature register --namespace Microsoft.ContainerService --name SpotPoolPreview
 az provider register -n Microsoft.ContainerService
@@ -81,9 +81,12 @@ az aks nodepool add -g $rg_name -n $spotpool_name_max --cluster-name $cluster_na
     --node-taints spot=max:NoSchedule \
     --os-type Linux # Windows
 
+# https://azure.microsoft.com/en-us/pricing/calculator/?service=virtual-machines
+# https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/#f-series
+
 az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_name  \
     --priority Spot \
-    --spot-max-price 0.42 \
+    --spot-max-price 0.0169 \
     --eviction-policy Delete \
     --labels env=poc team=gbb dept=wcb price=min \
     --resource-group $rg_name \

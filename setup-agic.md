@@ -56,7 +56,6 @@ az network application-gateway create --name $appgw_agic_name \
                                       --http-settings-protocol Https \
                                       --http2 Enabled \
                                       --location $location \
-                                      --zones 1 2 3 \
                                       --private-ip-address 172.16.2.42 \
                                       --public-ip-address $appgw_agic_IP \
                                       --routing-rule-type Basic \
@@ -64,7 +63,7 @@ az network application-gateway create --name $appgw_agic_name \
                                       --subnet $agic_subnet_id \
                                       --subscription $subId \
                                       --waf-policy "${appName}-waf-policy"
-
+                                      # --zones 1 2 3 \
 
 ```
 

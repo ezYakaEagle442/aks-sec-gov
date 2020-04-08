@@ -19,7 +19,7 @@ echo $public_ip_id
 # https://docs.microsoft.com/en-us/azure/firewall/overview
 # https://docs.microsoft.com/en-us/cli/azure/ext/azure-firewall/network/firewall?view=azure-cli-latest#ext-azure-firewall-az-network-firewall-create
 az extension add --name azure-firewall
-az network firewall create -n $firewall_name --zones 1 2 3 --location $location -g $rg_fw_name --sku AZFW_VNet
+az network firewall create -n $firewall_name --location $location -g $rg_fw_name --sku AZFW_VNet # --zones 1 2 3 
 
 # check
 az network firewall list --resource-group $rg_fw_name

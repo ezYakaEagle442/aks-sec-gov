@@ -149,8 +149,29 @@ Now you have several option to expose your app :
 
 ## Create Kubernetes PUBLIC service
 ```sh
+rg_id=$(az group show --name $rg_name --query id)
+echo "RG ID : "  $rg_id
+
+#sp_obj_id=$(az ad sp list --show-mine --query "[?appDisplayName=='${appName}'].{objectId:objectId}" --output tsv)
+#echo "Service Principal Object ID:" $sp_obj_id 
+
+sp_obj_id=$(az ad sp list --all --query "[?appDisplayName=='${appName}'].{objectId:objectId}" --output tsv)
+echo "Service Principal Object ID:" $sp_obj_id 
+az role assignment create --assignee $sp_obj_id --scope $rg_id --role "Network Contributor"
+
+# https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#before-you-begin
+# The AKS cluster service principal needs also permission to manage network resources if you use an existing subnet or resource group. In general, assign the Network contributor role to your service principal on the delegated resources
+
+# https://github.com/Azure/AKS/issues/326
+# Cannot create more than 20 public IP addresses with static allocation method for this subscription in this region.
+# https://github.com/Azure/AKS/issues/326
+
+# az role assignment create --assignee $sp_obj_id --scope $rg_id --role Contributor
+
 kubectl apply -f petclinic-service-lb.yaml -n $target_namespace
 k get svc -n $target_namespace -o wide
+
+k describe svc petclinic-lb-service -n $target_namespace
 
 # Standard load Balancer Use Case
 # Use the command below to retrieve the External-IP of the Service. Make sure to allow a couple of minutes for the Azure Load Balancer to assign a public IP.

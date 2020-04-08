@@ -1,8 +1,12 @@
 ## Plan IP addressing for your cluster
 
-[https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#plan-ip-addressing-for-your-cluster](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#plan-ip-addressing-for-your-cluster)
+See  :
 
-For Advanced networking options, see [https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni)
+- [Public IP sku comparison](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-network-ip-addresses-overview-arm#sku)
+
+- [https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#plan-ip-addressing-for-your-cluster](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni#plan-ip-addressing-for-your-cluster)
+
+- For Advanced networking options, see [https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni)
 
 ```sh
 # https://www.ipaddressguide.com/cidr
@@ -35,7 +39,10 @@ echo "New Node-Pool Subnet Id :" $new_node_pool_subnet_id
 
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/custom-roles-cli
 # az role definition create --role-definition <role_definition>
-az role assignment create --assignee $sp_id --scope $vnet_id --role Contributor
+# https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#before-you-begin ==>  Network contributor
+az role assignment list --assignee $sp_id 
+# az role assignment create --assignee $sp_id --scope $vnet_id --role Contributor
+az role assignment create --assignee $sp_id --scope $subnet_id --role "Network contributor"
 
 # When using AGIC , App Gateway runs in AKS VNet
 az network vnet subnet create --name $agic_subnet_name --address-prefixes 172.16.2.0/24 --vnet-name $vnet_name --resource-group $rg_name
@@ -155,13 +162,14 @@ echo "Bastion Subnet Id :" $bastion_subnet_id
 
 # https://github.com/Azure/azure-quickstart-templates/tree/master/101-azure-bastion-nsg
 
-az network nsg create --name nsg-management -g $rg_bastion_name --location $location
+b_nsg="bastion-nsg-management"
+az network nsg create --name $b_nsg -g $rg_bastion_name --location $location
 
-az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes Internet --name "Allow SSH from Internet" --nsg-name nsg-management -g $rg_bastion_name --priority 100
+az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes Internet --name "Allow SSH from Internet" --nsg-name $b_nsg -g $rg_bastion_name --priority 100
 
-az network nsg rule create --access Allow --destination-port-range 3389 --source-address-prefixes Internet --name "Allow RDP from Internet" --nsg-name nsg-management -g $rg_bastion_name --priority 110
+az network nsg rule create --access Allow --destination-port-range 3389 --source-address-prefixes Internet --name "Allow RDP from Internet" --nsg-name $b_nsg -g $rg_bastion_name --priority 110
 
-az network vnet subnet update --name ManagementSubnet --network-security-group nsg-management --vnet-name $vnet_bastion_name -g $rg_bastion_name
+az network vnet subnet update --name ManagementSubnet --network-security-group $b_nsg --vnet-name $vnet_bastion_name -g $rg_bastion_name
 
 ```
 
@@ -181,7 +189,6 @@ az network public-ip create --name $bastion_IP \
                             --dns-name $bastion_DNS_name \
                             -g $rg_bastion_name \
                             --subscription $subId \
-                            --zone 1 \
                             --sku Standard \
                             --version IPv4
                             
@@ -225,23 +232,19 @@ See
 # az vm image list-offers --publisher Canonical --location $location --output table
 # az vm image list --publisher Canonical --offer UbuntuServer --location $location --output table
 
+# --size Standard_D1_v2 or Standard_B1s
 az vm create --name $bastion_name \
     --image UbuntuLTS \
     --admin-username $bastion_admin_username \
     --resource-group $rg_bastion_name \
     --vnet-name $vnet_bastion_name \
     --subnet ManagementSubnet \
-    --nsg "nsg-management" \
-    --size Standard_D1_v2 \
+    --nsg $b_nsg \
+    --size Standard_B1s \
     --zone 1 \
-    --location $location
-    --ssh-key-values ~/.ssh/$ssh_key
+    --location $location \
+    --ssh-key-values ~/.ssh/$ssh_key.pub
     # --generate-ssh-keys
-
-# ls -al ~/.ssh/
-# mv ~/.ssh/id_rsa ~/.ssh/id_rsa_bastion_vm
-# mv ~/.ssh/id_rsa.pub ~/.ssh/id_rsa_bastion_vm.pub
-# ls -al ~/.ssh/
 
 network_interface_id=$(az vm show --name $bastion_name -g $rg_bastion_name --subscription $subId \
 --query 'networkProfile.networkInterfaces[0].id' -o tsv)

@@ -58,14 +58,13 @@ az network application-gateway waf-policy policy-setting update --policy-name "$
 
 az network application-gateway create --name $appgw_name \
                                       --resource-group $rg_name \
-                                      --capacity 1 --min-capacity 1 --max-capacity 3  \
+                                      --capacity 1 --min-capacity 1 --max-capacity 1  \
                                       --connection-draining-timeout 1 \
                                       --http-settings-cookie-based-affinity Enabled \
                                       --http-settings-port 443 --frontend-port 80 \
                                       --http-settings-protocol Https \
                                       --http2 Enabled \
                                       --location $location \
-                                      --zones 1 2 3 \
                                       --private-ip-address 172.42.1.42 \
                                       --public-ip-address $appgw_IP \
                                       --routing-rule-type Basic \
@@ -73,6 +72,7 @@ az network application-gateway create --name $appgw_name \
                                       --subnet $appgw_subnet_id \
                                       --subscription $subId \
                                       --waf-policy "${appName}-waf-policy"
+                                      # --zones 1 2 3 \
                                       # --key-vault-secret-id  $appgw_vault_secret_name  # https://docs.microsoft.com/en-us/azure/application-gateway/key-vault-certs
                                       # [--identity]
                                       # --vnet-name $appgw_subnet_name 

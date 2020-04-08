@@ -7,7 +7,13 @@ To demonstrate the security controls we are using, we will use a sample applicat
 **The features described in this workshop might be not yet production-ready, we enable preview-features for the purpose of learning.**
 
 ## End Goal
-The end goal is to take you from having a Kubernetes setup that is unsecure by default, to an Enterprise ready configuration that is secured by default. 
+The end goal is to take you from having a Kubernetes setup that is unsecure by default, to an Enterprise ready configuration that is secured by default.
+ 
+See also :
+
+- This [Attack matrix for Kubernetes from Azure Security Center](https://www.microsoft.com/security/blog/2020/04/02/attack-matrix-kubernetes/)
+
+- AKS [videos](https://azure.microsoft.com/en-us/resources/videos/index/?services=kubernetes-service&sort=newest)
 
 ![High-Level Architecture](./img/cloud-native-hld.png)
 

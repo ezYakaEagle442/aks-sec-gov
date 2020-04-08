@@ -15,8 +15,8 @@ az role assignment create \
     --scope $AKS_CLUSTER \
     --role "Azure Kubernetes Service Cluster Admin Role"
 
-az aks get-credentials -g $rg_name --name $cluster_nam --admin
+az aks get-credentials -g $rg_name --name $cluster_name --admin
 kubectl config view
-az role assignment delete --assignee $ACCOUNT_ID --scope $cluster_nam
+az role assignment delete --assignee $ACCOUNT_ID --scope $cluster_name
 
 ```
