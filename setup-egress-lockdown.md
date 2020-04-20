@@ -28,7 +28,7 @@ az network firewall application-rule create --collection-name $fw_app_collection
                                             "*.tun.${location}.azmk8s.io" "*.hcp.${location}.azmk8s.io" \
                                             "*mcr.microsoft.com" "*.data.mcr.microsoft.com" "*.cdn.mscr.io" \
                                             "*.microsoftonline.com" "management.azure.com" \
-                                            "*ubuntu.com" "*.hcp.${location}.azmk8s.io" \
+                                            "*ubuntu.com" \
                                             "*.gk.${location}.azmk8s.io" "gov-prod-policy-data.trafficmanager.net" \
                                             "raw.githubusercontent.com" "dc.services.visualstudio.com" \
                                             "*.ods.opinsights.azure.com" "*.oms.opinsights.azure.com" "*.monitoring.azure.com" \
@@ -67,6 +67,8 @@ az network firewall application-rule create -n "fw-app-rules-aks-api" -f $firewa
     --protocols "https=443" --action allow --priority 300 -g $rg_fw_name \
     --source-addresses "*" \
     --target-fqdns $aks_api_server_url
+
+# The private cluster FQDN format has changed from *guid.azmk8s.io to *guid.privatelink.azmk8s.io
 
 ```
 

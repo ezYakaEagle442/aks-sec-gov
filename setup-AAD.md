@@ -8,12 +8,37 @@ See also
 - new feature (not yet GA) [Integrate Azure AD v2.0 in AKS](https://docs.microsoft.com/en-us/azure/aks/azure-ad-v2)
 - [https://github.com/Azure/AKS/issues/1489](https://github.com/Azure/AKS/issues/1489 )
 
+
+Choose AAD Integration [V1](#aad-integration-v1) or [V2](#aad-integration-v2)
+
+## AAD Integration V2 
+
+(Currently in Preview)
+
 ```sh
 # TODO
+az feature register --name AAD-V2 --namespace Microsoft.ContainerService
+az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/AAD-V2')].{Name:name,State:properties.state}"
+
+# Create the AKS Admin group in Azure AD
+AKSADM_GRP_ID=$(az ad group create --display-name aks-adm-${appName} --mail-nickname aks-adm-${appName} --query objectId -o tsv)
+echo "AKS ADMIN GROUP ID: " $AKSADM_GRP_ID
+az ad group show --group $AKSADM_GRP_ID
+
+# Create aAKS Admin user. The user principal name (someuser@contoso.com) must contain one of the verified domains for the tenant.
+AKSADM_USR_ID=$(az ad user create --display-name "AKS Admin user ${appName}" --user-principal-name "aksadm@groland.grd" --password "P@ssw0rd1" --query objectId -o tsv)
+echo "AKS ADMIN USER ID: " $AKSADM_USR_ID
+az ad user show --id $AKSADM_USR_ID
+
+# Add the user to the appdev Azure AD group
+az ad group member add --member-id $AKSADM_USR_ID --group  $AKSADM_GRP_ID
+
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#azure-kubernetes-service-cluster-admin-role
+# az role assignment create --assignee $AKSADM_GRP_ID --role "Azure Kubernetes Service Cluster Admin Role" --scope $aks_cluster_id
 
 ```
 
-
+## AAD Integration V1
 ```sh
 # https://docs.microsoft.com/en-us/azure/aks/azure-ad-integration-cli
 # Create the Azure AD application

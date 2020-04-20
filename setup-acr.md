@@ -19,20 +19,21 @@ Note:
 # location from az account list-locations : francecentral | northeurope | westeurope 
 
 # https://github.com/Azure/azure-quickstart-templates/tree/master/101-container-registry-geo-replication
-# az acr create --resource-group $rg_acr_name --name $acr_registry_name --sku Premium --location $location
-# az acr replication create --location northeurope --registry $acr_registry_name --resource-group $rg_acr_name
+# az acr create --resource-group $rg_name --name $acr_registry_name --sku Premium --location $location
+# az acr replication create --location northeurope --registry $acr_registry_name --resource-group $rg_name
 
-# classic registry without replication, private link neither: az acr create --name $acr_registry_name --sku standard --location $location --resource-group $rg_acr_name 
+# classic registry without replication, private link neither: az acr create --name $acr_registry_name --sku standard --location $location --resource-group $rg_name 
 
 az provider register --namespace Microsoft.ContainerRegistry
-#acr_analytics_workspace=az monitor log-analytics workspace create --workspace-name $acr_analytics_workspace --location $location -g $rg_acr_name --retention-time 10
-#acr_analytics_workspace_id=$(az monitor log-analytics workspace show --workspace-name $acr_analytics_workspace -g $rg_acr_name --query "id" --output tsv)
+az monitor log-analytics workspace create --workspace-name $acr_analytics_workspace --location $location -g $rg_name
+acr_analytics_workspace_id=$(az monitor log-analytics workspace show --workspace-name $acr_analytics_workspace -g $rg_name --query "id" --output tsv)
+echo $acr_analytics_workspace_id
 
 # Use Premium sku to enable Private Link
-az acr create --name $acr_registry_name --sku Premium --location $location -g $rg_acr_name #--workspace $acr_analytics_workspace_id 
+az acr create --name $acr_registry_name --sku Premium --location $location -g $rg_name --workspace $acr_analytics_workspace_id 
 
 # Get the ACR registry resource id
-acr_registry_id=$(az acr show --name $acr_registry_name --resource-group $rg_acr_name --query "id" --output tsv)
+acr_registry_id=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "id" --output tsv)
 echo "ACR registry ID :" $acr_registry_id
 
 # Create role assignment
@@ -53,33 +54,33 @@ az acr check-health --yes -n $acr_registry_name
 ## Setup Private-Link
 ```sh
 az network private-dns zone create \
-  --resource-group $rg_acr_name\
+  --resource-group $rg_name\
   --name "privatelink.azurecr.io"
 
 # Create an association link: https://docs.microsoft.com/en-us/azure/container-registry/container-registry-private-link#create-an-association-link
 az network private-dns link vnet create \
-  --resource-group $rg_acr_name \
+  --resource-group $rg_name \
   --zone-name "privatelink.azurecr.io" \
   --name $acr_private_dns_link_name \
-  --virtual-network $acr_vnet_name \
+  --virtual-network $vnet_name \
   --registration-enabled false
 
-private_dns_link_id=$(az network private-dns link vnet show --name $acr_private_dns_link_name --zone-name "privatelink.azurecr.io" -g $rg_acr_name --query "id" --output tsv)
+private_dns_link_id=$(az network private-dns link vnet show --name $acr_private_dns_link_name --zone-name "privatelink.azurecr.io" -g $rg_name --query "id" --output tsv)
 echo "Private-Link DNS ID :" $private_dns_link_id
 
 az network private-endpoint create \
     --name $acr_private_endpoint_name \
-    --resource-group $rg_acr_name \
+    --resource-group $rg_name \
     --subnet $acr_subnet_id \
     --private-connection-resource-id $acr_registry_id \
     --group-ids registry \
     --location $location \
     --connection-name $acr_private_endpoint_svc_con_name
 
-acr_private_endpoint_id=$(az network private-endpoint show --name $acr_private_endpoint_name -g $rg_acr_name --query id -o tsv)
+acr_private_endpoint_id=$(az network private-endpoint show --name $acr_private_endpoint_name -g $rg_name --query id -o tsv)
 echo "ACR private-endpoint ID :" $acr_private_endpoint_id
 
-network_interface_id=$(az network private-endpoint show --name $acr_private_endpoint_name -g $rg_acr_name --query 'networkInterfaces[0].id' -o tsv)
+network_interface_id=$(az network private-endpoint show --name $acr_private_endpoint_name -g $rg_name --query 'networkInterfaces[0].id' -o tsv)
 echo "ACR Network Interface ID :" $network_interface_id
 
 acr_network_interface_private_ip=$(az resource show --ids $network_interface_id \
@@ -98,18 +99,18 @@ echo "ACR Data Endpoint private IP :" $acr_data_endpoint_private_ip
 ## Setup DNS
 
 ```sh
-az network private-dns record-set a create --name $acr_registry_name --zone-name privatelink.azurecr.io -g $rg_acr_name
+az network private-dns record-set a create --name $acr_registry_name --zone-name privatelink.azurecr.io -g $rg_name
 
 # Specify registry region in data endpoint name
-az network private-dns record-set a create --name ${acr_registry_name}.${location}.data --zone-name privatelink.azurecr.io -g $rg_acr_name
+az network private-dns record-set a create --name ${acr_registry_name}.${location}.data --zone-name privatelink.azurecr.io -g $rg_name
 
-az network private-dns record-set a add-record -g $rg_acr_name \
+az network private-dns record-set a add-record -g $rg_name \
   --record-set-name $acr_registry_name \
   --zone-name privatelink.azurecr.io \
   --ipv4-address $acr_network_interface_private_ip
 
 # Specify registry region in data endpoint name
-az network private-dns record-set a add-record -g $rg_acr_name \
+az network private-dns record-set a add-record -g $rg_name \
   --record-set-name ${acr_registry_name}.${location}.data \
   --zone-name privatelink.azurecr.io \
   --ipv4-address $acr_data_endpoint_private_ip
@@ -118,14 +119,14 @@ az network private-dns record-set a add-record -g $rg_acr_name \
 # az acr private-endpoint-connection list --registry-name $acr_registry_name
 # From home/public network, you wil get a public IP. If inside a vnet with private zone, then nslookup will resolve to the private ip.
 # note: we will have a feature roll out to let you disable the public access, which means “nslookup” will fail outside of vnet  
-acr_public=$(az acr show --name $acr_registry_name --resource-group $rg_acr_name --query "loginServer" --output tsv)
+acr_public=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "loginServer" --output tsv)
 echo "ACR Public :" $acr_public
 
 acr_private="${acr_registry_name}.privatelink.azurecr.io"
 echo "ACR private :" $acr_private
 
 nslookup $acr_registry_name.azurecr.io
-nslookup $acr_private_server
+nslookup $acr_private
 
 
 ```
@@ -149,6 +150,7 @@ az acr network-rule list--name $acr_registry_name
 
 # Verify access to the registry
 az acr login --name  $acr_registry_name 
+# az acr login -n $acr_registry_name --expose-token
 docker pull $acr_registry_name.azurecr.io/hello-world:v1
 
 ```

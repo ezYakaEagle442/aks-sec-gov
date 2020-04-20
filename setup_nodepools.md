@@ -8,10 +8,12 @@
 - When creating multiple node pools at cluster create time, all Kubernetes versions used by node pools must match the version set for the control plane. This version can be updated after the cluster has been provisioned by using per node pool operations.
 - [Kubernetes Taints & Tolerations docs](https://kubernetes.io/docs/concepts/configuration/taint-and-toleration)
 - [CLI Reference](https://docs.microsoft.com/en-us/cli/azure/aks/nodepool?view=azure-cli-latest#az-aks-nodepool-add)
+
+
 See also [AKS creation of NodePools in different Subnets](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#add-a-node-pool-with-a-unique-subnet-preview)
 - [https://aka.ms/node-labels](https://aka.ms/node-labels)
 
-[Issue #1338](https://github.com/Azure/AKS/issues/1338) :
+[Issue #1338](https://github.com/Azure/AKS/issues/1338) 
 
 ```sh
 
@@ -22,6 +24,7 @@ az aks nodepool list --cluster-name $cluster_name -g $rg_name
 # https://github.com/Azure/azure-cli/issues/8572
 # az extension remove --name aks-preview
 
+# Standard_D1_v2 or Standard_B1s or Standard_F2s_v2
 az aks nodepool add -n $poc_node_pool_name --cluster-name $cluster_name \
     --labels env=poc team=gbb dept=wcb \
     --resource-group $rg_name \
@@ -31,7 +34,7 @@ az aks nodepool add -n $poc_node_pool_name --cluster-name $cluster_name \
     --min-count=1 \
     --max-count=3 \
     --kubernetes-version $version \
-    --node-vm-size Standard_F2s_v2 \
+    --node-vm-size Standard_B1s \
     --node-taints env=poc:NoSchedule \
     --os-type Linux # Windows
 
@@ -47,10 +50,11 @@ To know before you start:
 - Spot needs to be VMSS based
 - Spot pools cannot be upgraded
 - Spot pools cannot change ScaleSetPriority after creation - recreation is needed
-- Spot pools has no SLA and they can be evicted at any time
+- Spot pools has no SLA and they can be evicted at any time. See [VMSS eviction policy](https://docs.microsoft.com/en-us/azure/virtual-machine-scale-sets/use-spot#eviction-policy)
 - Spot Nodes will have label: kubernetes.azure.com/scalesetpriority:spot  and System Pod's having anti-affinity to it.
 - Spot Nodes will have taint: kubernetes.azure.com/scalesetpriority=spot:NoSchedule
 - Remember to add tolerate to put designated workloads on Spot pool
+- Spot node pools require [user node pools](https://aka.ms/aks/nodepool/mode). AKS has now introduced a new Mode property for nodepools. This will allow you to set nodepools as System or User nodepools. System nodepools will have additional validations and will be preferred by system pods, while User pool will have more lax validations and can perform additional operations like **scale to 0 nodes or be removed from the cluster**. Each cluster needs at least one system pool.
 
 ```sh
 
@@ -65,7 +69,7 @@ az extension update --name aks-preview
 az feature register --namespace Microsoft.ContainerService --name SpotPoolPreview
 az provider register -n Microsoft.ContainerService
 
-az aks nodepool add -g $rg_name -n $spotpool_name_max --cluster-name $cluster_name  \
+az aks nodepool add -g $rg_name -n $spotpool_name_max --cluster-name $cluster_name --mode user \
     --priority Spot \
     --spot-max-price -1 \
     --eviction-policy Delete \
@@ -84,7 +88,7 @@ az aks nodepool add -g $rg_name -n $spotpool_name_max --cluster-name $cluster_na
 # https://azure.microsoft.com/en-us/pricing/calculator/?service=virtual-machines
 # https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/#f-series
 
-az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_name  \
+az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_name --mode user \
     --priority Spot \
     --spot-max-price 0.0169 \
     --eviction-policy Delete \
@@ -93,7 +97,7 @@ az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_na
     --vnet-subnet-id $new_node_pool_subnet_id \
     --zones 1 2 3 \
     --enable-cluster-autoscaler \
-    --min-count=1 \
+    --min-count=0 \
     --max-count=3 \
     --kubernetes-version $version \
     --node-vm-size Standard_F2s_v2 \

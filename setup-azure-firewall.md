@@ -27,6 +27,8 @@ az network firewall show --name $firewall_name --resource-group $rg_fw_name
 
 # Configure Firewall IP Config
 # /!\ This command will take a few mins.
+# https://azure.microsoft.com/en-us/pricing/details/ip-addresses/
+# https://azure.microsoft.com/en-us/pricing/details/azure-firewall/ => €1.055/h - 770€/month
 az network firewall ip-config create -g $rg_fw_name -f $firewall_name -n $firewall_ip_config_name --public-ip-address $firewall_public_IP_name --vnet-name $firewall_vnet_name
 # Capture Firewall IP Address for Later Use
 fw_pub_IP=$(az network public-ip show -g $rg_fw_name -n $firewall_public_IP_name --query "ipAddress" -o tsv)

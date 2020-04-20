@@ -7,8 +7,35 @@ See also :
 - [https://docs.microsoft.com/en-us/azure/security-center/security-center-permissions](https://docs.microsoft.com/en-us/azure/security-center/security-center-permissions)
 - [https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#security-admin](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#security-admin)
 - [https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#resource-policy-contributor](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#resource-policy-contributor)
+- [https://github.com/Azure/Community-Policy/tree/master/Policies/KubernetesService/append-aks-api-ip-restrictions](https://github.com/Azure/Community-Policy/tree/master/Policies/KubernetesService/append-aks-api-ip-restrictions)
+
 
 ```sh
 # https://github.com/Azure/sg-aks-workshop/blob/master/post-provisioning/README.md#opa-and-gatekeeper-policy-setup
+
+
+# Provider register: Register the Azure Kubernetes Services provider
+az provider register --namespace Microsoft.ContainerService
+
+# Provider register: Register the Azure Policy provider
+az provider register --namespace Microsoft.PolicyInsights
+
+# Feature register: enables installing the add-on
+az feature register --namespace Microsoft.ContainerService --name AKS-AzurePolicyAutoApprove
+
+# Use the following to confirm the feature has registered
+az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/AKS-AzurePolicyAutoApprove')].{Name:name,State:properties.state}"
+
+# Once the above shows 'Registered' run the following to propagate the update
+az provider register -n Microsoft.ContainerService
+
+# Feature register: enables the add-on to call the Azure Policy resource provider
+az feature register --namespace Microsoft.PolicyInsights --name AKS-DataPlaneAutoApprove
+
+# Use the following to confirm the feature has registered
+az feature list -o table --query "[?contains(name, 'Microsoft.PolicyInsights/AKS-DataPlaneAutoApprove')].{Name:name,State:properties.state}"
+
+# Once the above shows 'Registered' run the following to propagate the update
+az provider register -n Microsoft.PolicyInsights
 
 ```

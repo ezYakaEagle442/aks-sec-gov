@@ -62,9 +62,9 @@ az network nsg create --name nsg-management -g $rg_name --location $location
 
 az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes Internet --name "Allow SSH from Internet" --nsg-name nsg-management -g $rg_name --priority 100
 
-az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes 20.44.120.229 --name "Allow SSH from Azure Bastion" --nsg-name nsg-management -g $rg_name --priority 101
+az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes x.x.x.x --name "Allow SSH from Azure Bastion" --nsg-name nsg-management -g $rg_name --priority 101
 
-az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes 192.168.2.4 --name "Allow SSH from Linux JumpOff" --nsg-name nsg-management -g $rg_name --priority 102
+az network nsg rule create --access Allow --destination-port-range 22 --source-address-prefixes 192.168.x.x --name "Allow SSH from Linux JumpOff" --nsg-name nsg-management -g $rg_name --priority 102
 
 az network nsg rule create --access Allow --destination-port-range 3389 --source-address-prefixes Internet --name "Allow RDP from Internet" --nsg-name nsg-management -g $rg_name --priority 110
 
@@ -86,7 +86,7 @@ az aks create --name $cluster_name \
     --enable-cluster-autoscaler \
     --min-count=1 \
     --max-count=3 \
-    --node-vm-size Basic_A1 \
+    --node-vm-size Standard_F2s_v2 \
     --location $location \
     --vnet-subnet-id $subnet_id \
     --service-cidr 10.42.0.0/24 \
@@ -95,10 +95,6 @@ az aks create --name $cluster_name \
     --network-plugin $network_plugin \
     --network-policy $network_policy \
     --nodepool-name $node_pool_name \
-    --aad-server-app-id $serverApplicationId \
-    --aad-server-app-secret $serverApplicationSecret \
-    --aad-client-app-id $clientApplicationId \
-    --aad-tenant-id $tenantId \
     --admin-username $aks_admin_username \
     --load-balancer-sku standard \
     --vm-set-type VirtualMachineScaleSets \
@@ -110,8 +106,14 @@ az aks create --name $cluster_name \
     --outbound-type userDefinedRouting \
     --enable-private-cluster \
     --enable-addons azure-policy \
-    --enable-managed-identity # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
+    --enable-managed-identity \
+    # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
     # --no-wait ==> When --attach-acr and --enable-managed-identity are both specified, --no-wait is not allowed, please wait until the whole operation succeeds.
+    --enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId
+    # --aad-server-app-id $serverApplicationId \
+    # --aad-server-app-secret $serverApplicationSecret \
+    # --aad-client-app-id $clientApplicationId \
+    # --aad-tenant-id $tenantId \
 
 
     # below is not yet implemented, see https://github.com/Azure/AKS/issues/1441
@@ -140,7 +142,7 @@ Apply [KubeCtl alias](./tools#kube-tools)
 ls -al ~/.kube
 rm  ~/.kube/config
 
-az aks get-credentials --resource-group $rg_name  --name $cluster_name --admin
+az aks get-credentials --resource-group $rg_name --name $cluster_name --admin
 
 aks_api_server_url=$(az aks show -n $cluster_name -g $rg_name --query 'privateFqdn' -o tsv)
 echo "AKS API server URL: " $aks_api_server_url
@@ -154,11 +156,12 @@ az aks show -n $cluster_name -g $rg_name
 # Vnet peering
 
 ```sh
+# managed_rg="MC_$rg_name"_"$cluster_name""_""$location"
+# echo $managed_rg
+
 managed_rg=$(az aks show --resource-group $rg_name --name $cluster_name --query nodeResourceGroup -o tsv)
 echo "CLUSTER_RESOURCE_GROUP:"$managed_rg
 
-# managed_rg="MC_$rg_name"_"$cluster_name""_""$location"
-# echo $managed_rg
 
 aks_node_rg_id=$(az group show --name $managed_rg --query id)
 echo $aks_node_rg_id
@@ -372,28 +375,28 @@ aks_cluster_id=$(az aks show -n $cluster_name -g $rg_name --query id -o tsv)
 echo "AKS cluster ID : " $aks_cluster_id
 
 # Create the first example group in Azure AD for the application developers
-APPDEV_ID=$(az ad group create --display-name appdev --mail-nickname appdev --query objectId -o tsv)
+APPDEV_ID=$(az ad group create --display-name appdev-${appName} --mail-nickname appdev --query objectId -o tsv)
 echo "APPDEV GROUP ID: " $APPDEV_ID
 # APPDEV_ID=$(az ad group show --group appdev --query objectId -o tsv)
 az role assignment create --assignee $APPDEV_ID --role "Azure Kubernetes Service Cluster User Role" --scope $aks_cluster_id
 
 # Create a second example group, this one for SREs named opssre
-OPSSRE_ID=$(az ad group create --display-name opssre --mail-nickname opssre --query objectId -o tsv)
+OPSSRE_ID=$(az ad group create --display-name opssre-${appName} --mail-nickname opssre-${appName} --query objectId -o tsv)
 echo "OPSSRE GROUP ID: " $OPSSRE_ID
 # OPSSRE_ID=$(az ad group show --group opssre --query objectId -o tsv)
 az role assignment create --assignee $OPSSRE_ID --role "Azure Kubernetes Service Cluster User Role" --scope $aks_cluster_id
 
 # Create a user for the Dev role
-AKSDEV_ID=$(az ad user create --display-name "AKS Dev" --user-principal-name aksdev@groland.grd --password P@ssw0rd1 --query objectId -o tsv)
+AKSDEV_ID=$(az ad user create --display-name "AKS Dev ${appName}" --user-principal-name "aksdev@groland.grd" --password P@ssw0rd1 --query objectId -o tsv)
 echo "AKS DEV USER ID: " $AKSDEV_ID
 # Add the user to the appdev Azure AD group
-az ad group member add --group appdev --member-id $AKSDEV_ID
+az ad group member add --member-id $AKSDEV_ID --group appdev-${appName} 
 
 # Create a user for the SRE role
-AKSSRE_ID=$(az ad user create --display-name "AKS SRE" --user-principal-name akssre@groland.grd --password P@ssw0rd1 --query objectId -o tsv)
+AKSSRE_ID=$(az ad user create --display-name "AKS SRE ${appName}" --user-principal-name "akssre@groland.grd" --password P@ssw0rd1 --query objectId -o tsv)
 echo "AKS SRE USER ID: " $AKSSRE_ID
 # Add the user to the opssre Azure AD group
-az ad group member add --group opssre --member-id $AKSSRE_ID
+az ad group member add --member-id $AKSSRE_ID --group opssre-${appName} 
 
 # https://kubernetes.io/docs/concepts/overview/kubernetes-api/#api-groups
 # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/

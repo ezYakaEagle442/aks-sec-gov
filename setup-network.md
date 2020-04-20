@@ -14,7 +14,7 @@ See  :
 # https://github.com/Azure/azure-quickstart-templates/tree/master/101-aks-advanced-networking
 
 
-```
+``` 
 
 ## Create Networks
 
@@ -52,6 +52,7 @@ echo "AGIC Subnet Id :" $agic_subnet_id
 
 # Firewall
 az group create --name $rg_fw_name --location $location
+
 az network vnet create --name $firewall_vnet_name --resource-group $rg_fw_name --address-prefixes 172.21.0.0/24 --location $location
 # AzureFirewallSubnet must be at least /26 for deploying an Azure Firewall.
 az network vnet subnet create --name $firewall_subnet_name --address-prefixes 172.21.0.0/26 --vnet-name $firewall_vnet_name -g $rg_fw_name
@@ -80,29 +81,29 @@ ilb_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-nam
 echo "Internal Load BalancerLB Subnet Id :" $ilb_subnet_id	
 
 # ACR - PrivateLink
-az group create --name $rg_acr_name --location $location
-az network vnet create --name $acr_vnet_name -g $rg_acr_name --address-prefixes 172.42.42.0/24 --location $location
-az network vnet subnet create --name $acr_subnet_name --address-prefixes 172.42.42.0/27 --vnet-name $acr_vnet_name -g $rg_acr_name 
+# az group create --name $rg_acr_name --location $location
+az network vnet create --name $acr_vnet_name -g $rg_name --address-prefixes 172.42.42.0/24 --location $location
+az network vnet subnet create --name $acr_subnet_name --address-prefixes 172.42.42.0/27 --vnet-name $acr_vnet_name -g $rg_name 
 
-acr_vnet_id=$(az network vnet show --resource-group $rg_acr_name --name $acr_vnet_name --query id -o tsv)
+acr_vnet_id=$(az network vnet show --resource-group $rg_name --name $acr_vnet_name --query id -o tsv)
 echo "ACR VNet Id :" $acr_vnet_id	
 
-acr_subnet_id=$(az network vnet subnet show --resource-group $rg_acr_name --vnet-name $acr_vnet_name --name $acr_subnet_name --query id -o tsv)
+acr_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name $acr_vnet_name --name $acr_subnet_name --query id -o tsv)
 echo "ACR Subnet Id :" $acr_subnet_id	
 
-az network vnet subnet update --name $acr_subnet_name --disable-private-endpoint-network-policies --vnet-name $acr_vnet_name -g $rg_acr_name
+az network vnet subnet update --name $acr_subnet_name --disable-private-endpoint-network-policies --vnet-name $acr_vnet_name -g $rg_name
 
 # KeyVault - PrivateLink
-az group create --name $rg_kv_name --location $location
-az network vnet create --name $kv_vnet_name -g $rg_kv_name --address-prefixes 172.12.0.0/24 --location $location
-az network vnet subnet create --name $kv_subnet_name --address-prefixes 172.12.0.0/27 --vnet-name $kv_vnet_name -g $rg_kv_name 
+# az group create --name $rg_kv_name --location $location
+az network vnet create --name $kv_vnet_name -g $rg_name --address-prefixes 172.12.0.0/24 --location $location
+az network vnet subnet create --name $kv_subnet_name --address-prefixes 172.12.0.0/27 --vnet-name $kv_vnet_name -g $rg_name 
 
-az network vnet subnet update --name $kv_subnet_name -g $rg_kv_name --vnet-name $kv_vnet_name --disable-private-endpoint-network-policies true
+az network vnet subnet update --name $kv_subnet_name -g $rg_name --vnet-name $kv_vnet_name --disable-private-endpoint-network-policies true
 
-kv_vnet_id=$(az network vnet show --name $kv_vnet_name -g $rg_kv_name --query id -o tsv)
+kv_vnet_id=$(az network vnet show --name $kv_vnet_name -g $rg_name --query id -o tsv)
 echo "KeyVault VNet Id :" $kv_vnet_id	
 
-kv_subnet_id=$(az network vnet subnet show --name $kv_subnet_name --vnet-name $kv_vnet_name -g $rg_kv_name --query id -o tsv)
+kv_subnet_id=$(az network vnet subnet show --name $kv_subnet_name --vnet-name $kv_vnet_name -g $rg_name --query id -o tsv)
 echo "KeyVault Subnet Id :" $kv_subnet_id	
 
 
@@ -246,8 +247,7 @@ az vm create --name $bastion_name \
     --ssh-key-values ~/.ssh/$ssh_key.pub
     # --generate-ssh-keys
 
-network_interface_id=$(az vm show --name $bastion_name -g $rg_bastion_name --subscription $subId \
---query 'networkProfile.networkInterfaces[0].id' -o tsv)
+network_interface_id=$(az vm show --name $bastion_name -g $rg_bastion_name --query 'networkProfile.networkInterfaces[0].id' -o tsv)
 echo "Bastion VM Network Interface ID :" $network_interface_id
 
 network_interface_private_ip=$(az resource show --ids $network_interface_id \
@@ -259,6 +259,15 @@ network_interface_pub_ip_id=$(az resource show --ids $network_interface_id \
 
 network_interface_pub_ip=$(az network public-ip show -g $rg_name --id $network_interface_pub_ip_id --query "ipAddress" -o tsv)
 echo "Network Interface public  IP :" $network_interface_pub_ip
+
+# test
+ssh -i ~/.ssh/$ssh_key $bastion_admin_username@$network_interface_pub_ip
+
+# Save budget ! Stop will  power off the specified VM & it will continue to be billed.
+# https://docs.microsoft.com/en-us/azure/virtual-machines/linux/states-lifecycle
+# az vm stop --name $bastion_name -g $rg_bastion_name
+# az vm deallocate --name $bastion_name -g $rg_bastion_name
+# az vm delete --name $bastion_name -g $rg_bastion_name
 
 ```
 
@@ -312,7 +321,7 @@ az network vnet peering create -n $acr_vnet_peering_name \
 az network vnet peering show -g $rg_name -n $acr_vnet_peering_name --vnet-name $vnet_name --query peeringState
 
 az network vnet peering create -n $acr_vnet_peering_name \
-    -g $rg_acr_name \
+    -g $rg_name \
     --subscription $subId \
     --allow-vnet-access \
     --vnet-name $acr_vnet_name\
@@ -320,7 +329,7 @@ az network vnet peering create -n $acr_vnet_peering_name \
 
 az network vnet peering list -g $rg_name --vnet-name $vnet_name  --subscription $subId
 az network vnet peering show -g $rg_name -n $acr_vnet_peering_name --vnet-name $vnet_name --query peeringState
-az network vnet peering show -g $rg_acr_name -n $acr_vnet_peering_name --vnet-name $acr_vnet_name --query peeringState
+az network vnet peering show -g $rg_name -n $acr_vnet_peering_name --vnet-name $acr_vnet_name --query peeringState
 
 ```
 ## Setup VNet peering : AKS ==> KV
@@ -335,17 +344,17 @@ az network vnet peering create -n $kv_vnet_peering_name \
     --remote-vnet $kv_vnet_id
 
 az network vnet peering show -g $rg_name -n $kv_vnet_peering_name --vnet-name $vnet_name --query peeringState
-az network vnet peering list -g $rg_kv_name --vnet-name $vnet_name  --subscription $subId
 
 az network vnet peering create -n $kv_vnet_peering_name \
-    -g $rg_kv_name \
+    -g $rg_name \
     --subscription $subId \
     --allow-vnet-access \
     --vnet-name $kv_vnet_name \
     --remote-vnet $vnet_id
 
+az network vnet peering list -g $rg_name --vnet-name $kv_vnet_name  --subscription $subId
 az network vnet peering show -g $rg_name -n $kv_vnet_peering_name --vnet-name $vnet_name --query peeringState
-az network vnet peering show -g $rg_kv_name -n $kv_vnet_peering_name --vnet-name $kv_vnet_name --query peeringState
+az network vnet peering show -g $rg_name -n $kv_vnet_peering_name --vnet-name $kv_vnet_name --query peeringState
 
 ```
 
@@ -360,7 +369,6 @@ az network vnet peering create -n $vnet_peering_name_aks_fw \
     --remote-vnet $fw_vnet_id
 
 az network vnet peering show -g $rg_name -n $vnet_peering_name_aks_fw --vnet-name $vnet_name --query peeringState
-az network vnet peering show -g $rg_fw_name -n $vnet_peering_name_aks_fw --vnet-name $firewall_vnet_name --query peeringState
 
 az network vnet peering create -n $vnet_peering_name_aks_fw \
     -g $rg_fw_name \
@@ -369,8 +377,9 @@ az network vnet peering create -n $vnet_peering_name_aks_fw \
     --vnet-name $firewall_vnet_name \
     --remote-vnet $vnet_id	
 
-az network vnet peering list -g $rg_fw_name --vnet-name $vnet_name --subscription $subId
+az network vnet peering list -g $rg_fw_name --vnet-name $firewall_vnet_name --subscription $subId
 az network vnet peering show -g $rg_fw_name -n $vnet_peering_name_aks_fw --vnet-name $firewall_vnet_name --query peeringState
+az network vnet peering show -g $rg_name -n $vnet_peering_name_aks_fw --vnet-name $vnet_name --query peeringState
 
 ```
 
@@ -386,17 +395,16 @@ az network vnet peering create -n $vnet_peering_name_bastion_kv \
     --remote-vnet $kv_vnet_id
 
 az network vnet peering show -g $rg_bastion_name -n $vnet_peering_name_bastion_kv --vnet-name $vnet_bastion_name --query peeringState
-az network vnet peering show -g $rg_kv_name -n $vnet_peering_name_bastion_kv --vnet-name $kv_vnet_name --query peeringState
 
 az network vnet peering create -n $vnet_peering_name_bastion_kv \
-    -g $rg_kv_name \
+    -g $rg_name \
     --subscription $subId \
     --allow-vnet-access \
     --vnet-name $kv_vnet_name \
     --remote-vnet $bastion_vnet_id
 
-az network vnet peering list -g $rg_kv_name --vnet-name $kv_vnet_name --subscription $subId
-az network vnet peering show -g $rg_kv_name -n $vnet_peering_name_bastion_kv --vnet-name $kv_vnet_name --query peeringState
+az network vnet peering list -g $rg_name --vnet-name $kv_vnet_name --subscription $subId
+az network vnet peering show -g $rg_name -n $vnet_peering_name_bastion_kv --vnet-name $kv_vnet_name --query peeringState
 az network vnet peering show -g $rg_bastion_name -n $vnet_peering_name_bastion_kv --vnet-name $vnet_bastion_name --query peeringState
 
 ```
@@ -412,17 +420,16 @@ az network vnet peering create -n $vnet_peering_name_bastion_acr \
     --remote-vnet $acr_vnet_id
 
 az network vnet peering show -g $rg_bastion_name -n $vnet_peering_name_bastion_acr --vnet-name $vnet_bastion_name --query peeringState
-az network vnet peering show -g $rg_acr_name -n $vnet_peering_name_bastion_acr --vnet-name $acr_vnet_name --query peeringState
 
 az network vnet peering create -n $vnet_peering_name_bastion_acr \
-    -g $rg_acr_name \
+    -g $rg_name \
     --subscription $subId \
     --allow-vnet-access \
     --vnet-name $acr_vnet_name \
     --remote-vnet $bastion_vnet_id
 
-az network vnet peering list -g $rg_acr_name --vnet-name $acr_vnet_name --subscription $subId
-az network vnet peering show -g $rg_acr_name -n $vnet_peering_name_bastion_acr --vnet-name $acr_vnet_name --query peeringState
+az network vnet peering list -g $rg_name --vnet-name $acr_vnet_name --subscription $subId
+az network vnet peering show -g $rg_name -n $vnet_peering_name_bastion_acr --vnet-name $acr_vnet_name --query peeringState
 az network vnet peering show -g $rg_bastion_name -n $vnet_peering_name_bastion_acr --vnet-name $vnet_bastion_name --query peeringState
 
 ```

@@ -8,6 +8,7 @@ See :
 - [https://docs.microsoft.com/en-us/azure/application-gateway/create-ssl-portal](https://docs.microsoft.com/en-us/azure/application-gateway/create-ssl-portal)
 - [https://docs.microsoft.com/en-us/azure/application-gateway/key-vault-certs](https://docs.microsoft.com/en-us/azure/application-gateway/key-vault-certs)
 - [https://docs.microsoft.com/en-us/azure/application-gateway/application-gateway-autoscaling-zone-redundant#scaling-application-gateway-and-waf-v2](https://docs.microsoft.com/en-us/azure/application-gateway/application-gateway-autoscaling-zone-redundant#scaling-application-gateway-and-waf-v2)
+- [Pricing](https://azure.microsoft.com/en-us/pricing/details/application-gateway)
 
 Azure Application Gateway can be used as an internal application load balancer or as an internet-facing application load balancer. An internet-facing application gateway uses public IP addresses. The DNS name of an internet-facing application gateway is publicly resolvable to its public IP address. As a result, internet-facing application gateways can route client requests to the internet. \
 
@@ -58,7 +59,7 @@ az network application-gateway waf-policy policy-setting update --policy-name "$
 
 az network application-gateway create --name $appgw_name \
                                       --resource-group $rg_name \
-                                      --capacity 1 --min-capacity 1 --max-capacity 1  \
+                                      --capacity 1 --min-capacity 1 --max-capacity 3  \
                                       --connection-draining-timeout 1 \
                                       --http-settings-cookie-based-affinity Enabled \
                                       --http-settings-port 443 --frontend-port 80 \
