@@ -7,7 +7,10 @@ See [https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active
 See also 
 - new feature (not yet GA) [Integrate Azure AD v2.0 in AKS](https://docs.microsoft.com/en-us/azure/aks/azure-ad-v2)
 - [https://github.com/Azure/AKS/issues/1489](https://github.com/Azure/AKS/issues/1489 )
-
+- [https://docs.microsoft.com/en-us/azure/aks/concepts-identity#azure-active-directory-integration]
+- [https://docs.microsoft.com/en-us/azure/aks/azure-ad-integration-cli](https://docs.microsoft.com/en-us/azure/aks/azure-ad-integration-cli)
+- [https://docs.microsoft.com/en-us/azure/aks/azure-ad-rbac](https://docs.microsoft.com/en-us/azure/aks/azure-ad-rbac)
+- [https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication)
 
 Choose AAD Integration [V1](#aad-integration-v1) or [V2](#aad-integration-v2)
 

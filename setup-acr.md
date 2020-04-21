@@ -36,6 +36,8 @@ az acr create --name $acr_registry_name --sku Premium --location $location -g $r
 acr_registry_id=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "id" --output tsv)
 echo "ACR registry ID :" $acr_registry_id
 
+# https://aka.ms/acr/installaad/bash
+
 # Create role assignment
 az role assignment create --assignee $sp_id --role acrpull --scope $acr_registry_id
 

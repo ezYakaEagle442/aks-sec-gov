@@ -114,6 +114,12 @@ ${registryname}.azurecr.io/spring-petclinic:{{.Run.ID}}</span>
 [https://docs.microsoft.com/en-us/azure/container-registry/container-registry-helm-repos](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-helm-repos)
 
 ```sh
+
+IMPORTANT TODO !!!! : https://github.com/Azure-Samples/java-on-aks/blob/master/.scripts/e2e-using-aks.sh 
+envsubst < 1-config.yaml > deploy/1-config.yaml
+https://www.linux.org/docs/man1/envsubst.html
+<image>${CONTAINER_REGISTRY}.azurecr.io/${parent.artifactId}-${project.name}:${IMAGE_TAG}</image>
+
 #az acr run -r $acr_registry_name --cmd "${docker_server}/spring-petclinic:dd2" /dev/null
 kubectl apply -f petclinic-deployment.yaml -n $target_namespace
 kubectl get deployments -n $target_namespace

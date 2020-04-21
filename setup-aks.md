@@ -370,6 +370,7 @@ kubectl describe namespace sre
 ## Control access to cluster resources using RBAC and Azure Active Directory identities in AKS
 ```sh
 # https://docs.microsoft.com/en-us/azure/aks/azure-ad-rbac
+# https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-identity#use-role-based-access-controls-rbac 
 
 aks_cluster_id=$(az aks show -n $cluster_name -g $rg_name --query id -o tsv)
 echo "AKS cluster ID : " $aks_cluster_id
@@ -410,7 +411,7 @@ kubectl apply -f rolebinding-sre-namespace.yaml
 # Reset the kubeconfig context using the az aks get-credentials command. In a previous section, you set the context using the cluster admin credentials. 
 # The admin user bypasses Azure AD sign in prompts. Without the --admin parameter, the user context is applied that requires all requests to be authenticated using Azure AD.
 az aks get-credentials --name $cluster_name -g $rg_name --overwrite-existing
-kubectl run --generator=run-pod/v1 nginx-dev --image=nginx --namespace development
+kubectl run --restart=Never nginx-dev --image=nginx --namespace development
 kubectl get pods --namespace development
 kubectl get pods --all-namespaces
 

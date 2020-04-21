@@ -1,5 +1,5 @@
 kind: RoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: dev-user-access
   namespace: development
@@ -9,5 +9,5 @@ roleRef:
   name: dev-user-full-access
 subjects:
 - kind: Group
-  namespace: dev
+  namespace: development
   name: groupObjectId
