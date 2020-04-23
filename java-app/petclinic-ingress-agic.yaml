@@ -9,7 +9,7 @@ metadata:
   appgw.ingress.kubernetes.io/use-private-ip: "true"
 spec:
   rules:
-  - host: petclinic.cloudapp.azure.com
+  - host: petclinic.${location}.cloudapp.azure.com
     http:
       paths:
       - backend:

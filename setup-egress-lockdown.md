@@ -18,6 +18,7 @@ See also [https://github.com/Azure/AKS/issues/1476](https://github.com/Azure/AKS
 
 # Collections are created as part of the az network firewall application-rule create command.
 # https://docs.microsoft.com/en-us/cli/azure/ext/azure-firewall/network/firewall/application-rule?view=azure-cli-latest#ext-azure-firewall-az-network-firewall-application-rule-create
+# quay.io & *.cloudfront.net required for Nginx Ingress Controller
 az network firewall application-rule create --collection-name $fw_app_collection_name \
                                             --firewall-name $firewall_name \
                                             --name $fw_app_rule_name \
@@ -29,6 +30,7 @@ az network firewall application-rule create --collection-name $fw_app_collection
                                             "*mcr.microsoft.com" "*.data.mcr.microsoft.com" "*.cdn.mscr.io" \
                                             "*.microsoftonline.com" "management.azure.com" \
                                             "*ubuntu.com" \
+                                            "quay.io" "*.cloudfront.net" "k8s.gcr.io" \
                                             "*.gk.${location}.azmk8s.io" "gov-prod-policy-data.trafficmanager.net" \
                                             "raw.githubusercontent.com" "dc.services.visualstudio.com" \
                                             "*.ods.opinsights.azure.com" "*.oms.opinsights.azure.com" "*.monitoring.azure.com" \

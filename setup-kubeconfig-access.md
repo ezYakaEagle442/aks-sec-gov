@@ -2,6 +2,7 @@
 
 ```sh
 # https://docs.microsoft.com/en-us/azure/aks/control-kubeconfig-access# Get the resource ID of your AKS cluster
+# https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/
 
 AKS_CLUSTER=$(az aks show --resource-group $rg_name --name $cluster_name --query id -o tsv)
 

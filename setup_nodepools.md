@@ -90,7 +90,7 @@ az aks nodepool add -g $rg_name -n $spotpool_name_max --cluster-name $cluster_na
 
 az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_name --mode user \
     --priority Spot \
-    --spot-max-price 0.0169 \
+    --spot-max-price 0.016 \
     --eviction-policy Delete \
     --labels env=poc team=gbb dept=wcb price=min \
     --resource-group $rg_name \

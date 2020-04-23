@@ -16,9 +16,6 @@ spec:
         containers:
         - name: petclinic
           image: ${registry}.azurecr.io/spring-petclinic:{{.Run.ID}}
-          env:
-          - name: registry
-            value: ${acr_registry_name}
           imagePullPolicy: Always
           livenessProbe:
             initialDelaySeconds: 60

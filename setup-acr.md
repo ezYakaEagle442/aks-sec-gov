@@ -2,6 +2,10 @@
 
 ACR supports [Content-Trust](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-content-trust)
 
+See also :
+- [https://github.com/Azure/AKS/issues/688](https://github.com/Azure/AKS/issues/688)
+- [Notary v2 project - cross-industry initiative](https://github.com/notaryproject/requirements)
+
 ## Create Azure Container Registry
 Note: 
 - Premium sku is a requirement to enable replication, and also to leverage ACR Firewall

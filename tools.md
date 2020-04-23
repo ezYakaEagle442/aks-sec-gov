@@ -199,3 +199,27 @@ function k([Parameter(ValueFromRemainingArguments = $true)]$params) { & kubectl 
 function kubectl([Parameter(ValueFromRemainingArguments = $true)]$params) { Write-Output "> kubectl $(@($params | ForEach-Object {$_}) -join ' ')"; & kubectl.exe $params; }
 function k([Parameter(ValueFromRemainingArguments = $true)]$params) { Write-Output "> k $(@($params | ForEach-Object {$_}) -join ' ')"; & kubectl.exe $params; }
 ```
+
+## k9s
+K9s provides a terminal UI to interact with your Kubernetes clusters. The aim of this project is to make it easier to navigate, observe and manage your applications in the wild. K9s continually watches Kubernetes for changes and offers subsequent commands to interact with your observed resources.
+
+See [https://github.com/derailed/k9s](https://github.com/derailed/k9s)
+
+```sh
+# 
+wget https://github.com/derailed/k9s/releases/download/v0.19.2/k9s_Linux_x86_64.tar.gz
+gunzip k9s_Linux_x86_64.tar.gz
+tar -xvf k9s_Linux_x86_64.tar
+
+export TERM=xterm-256color
+export EDITOR=vim
+
+ ./k9s help
+./k9s version
+
+# To run K9s in a given namespace
+k9s -n mycoolns
+# Start K9s in an existing KubeConfig context
+k9s --context coolCtx
+
+```

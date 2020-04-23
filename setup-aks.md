@@ -109,11 +109,11 @@ az aks create --name $cluster_name \
     --enable-managed-identity \
     # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
     # --no-wait ==> When --attach-acr and --enable-managed-identity are both specified, --no-wait is not allowed, please wait until the whole operation succeeds.
-    --enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId
-    # --aad-server-app-id $serverApplicationId \
-    # --aad-server-app-secret $serverApplicationSecret \
-    # --aad-client-app-id $clientApplicationId \
-    # --aad-tenant-id $tenantId \
+    #--enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId # requires Kubectl client 1.18.x
+    --aad-server-app-id $serverApplicationId \
+    --aad-server-app-secret $serverApplicationSecret \
+    --aad-client-app-id $clientApplicationId \
+    --aad-tenant-id $tenantId
 
 
     # below is not yet implemented, see https://github.com/Azure/AKS/issues/1441
@@ -144,10 +144,11 @@ rm  ~/.kube/config
 
 az aks get-credentials --resource-group $rg_name --name $cluster_name --admin
 
+az aks show -n $cluster_name -g $rg_name
+
 aks_api_server_url=$(az aks show -n $cluster_name -g $rg_name --query 'privateFqdn' -o tsv)
 echo "AKS API server URL: " $aks_api_server_url
 
-az aks show -n $cluster_name -g $rg_name
 
 ```
 
@@ -169,21 +170,37 @@ echo $aks_node_rg_id
 # AKS_MC_RG=$(az group list --query "[?starts_with(name, 'MC_${rg_name}')].name | [0]" --output tsv)
 # ROUTE_TABLE=$(az network route-table list -g ${AKS_MC_RG} --query "[].id | [0]" -o tsv)
 
-# https://docs.microsoft.com/en-us/azure/aks/private-clusters#virtual-network-peering
-# ex: aks-privat-rg-secgov-eastus-7b5f97-f49ffa15.713705ba-88d9-47cc-8d1b-ce03e4df9405.privatelink.eastus2.azmk8s.io
-# 8833cc9a-99ec-4630-8b3c-786b59ef4507.privatelink.eastus2.azmk8s.io
+# If the snippet below is wrong, do it from the portal: https://docs.microsoft.com/en-us/azure/aks/private-clusters#virtual-network-peering
 
-# The snippet below is wrong, do it from the portal
-az network private-dns link vnet list -g $rg_name --zone-name "<GUID>.privatelink.${location}.azmk8s.io
+aks_api_server_url_length=$(echo -n $aks_api_server_url | wc -c)
+echo "API server URL length " $aks_api_server_url_length
+
+prv_lnk_url_pattern_length=$(echo -n ".privatelink.${location}.azmk8s.io" | wc -c)
+echo "Private link URL pattern length " $prv_lnk_url_pattern_length
+# echo ${aks_api_server_url: - $prv_lnk_url_pattern_length} 
+
+
+url_begin_length=$(echo $(($aks_api_server_url_length - $prv_lnk_url_pattern_length)))
+aks_api_server_url_begin="${aks_api_server_url:0:$url_begin_length}"
+echo "AKS URL name begins with " $aks_api_server_url_begin
+
+
+index=$(echo `expr index "$aks_api_server_url_begin" .`)
+echo "Index " $index
+
+prv_lnk_zone_guid="${aks_api_server_url_begin:$index:$url_begin_length}"
+echo "Private link zone GUID " $prv_lnk_zone_guid
+
+az network private-dns link vnet list -g $managed_rg --zone-name "$prv_lnk_zone_guid.privatelink.${location}.azmk8s.io"
 
 az network private-dns link vnet create \
   --resource-group $managed_rg \
-  --zone-name "<GUID>.privatelink.${location}.azmk8s.io" \
+  --zone-name "$prv_lnk_zone_guid.privatelink.${location}.azmk8s.io" \
   --name $aks_private_dns_link_name \
-  --virtual-network $vnet_bastion_name \
+  --virtual-network $bastion_vnet_id \
   --registration-enabled false
 
-private_dns_link_id=$(az network private-dns link vnet show --name $aks_private_dns_link_name --zone-name "<GUID>.privatelink.${location}.azmk8s.io" -g $managed_rg --query "id" --output tsv)
+private_dns_link_id=$(az network private-dns link vnet show --name $aks_private_dns_link_name --zone-name "$prv_lnk_zone_guid.privatelink.${location}.azmk8s.io" -g $managed_rg --query "id" --output tsv)
 echo "AKS Private-Link DNS ID :" $private_dns_link_id
 
   
@@ -415,15 +432,15 @@ kubectl run --restart=Never nginx-dev --image=nginx --namespace development
 kubectl get pods --namespace development
 kubectl get pods --all-namespaces
 
-kubectl run --generator=run-pod/v1 nginx-dev --image=nginx --namespace sre
+kubectl run --restart=Never nginx-dev --image=nginx --namespace sre
 # Error from server (Forbidden): pods is forbidden: User "aksdev@contoso.com" cannot create resource "pods" in API group "" in the namespace "sre"
 
 # Now Test the SRE access to the AKS cluster resources
 az aks get-credentials --name $cluster_name -g $rg_name --overwrite-existing
-kubectl run --generator=run-pod/v1 nginx-sre --image=nginx --namespace sre
+kubectl run --restart=Never nginx-sre --image=nginx --namespace sre
 kubectl get pods --namespace sre
 kubectl get pods --all-namespaces
-kubectl run --generator=run-pod/v1 nginx-sre --image=nginx --namespace dev
+kubectl run --restart=Never nginx-sre --image=nginx --namespace development
 
 ```
 

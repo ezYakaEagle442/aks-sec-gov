@@ -13,10 +13,15 @@ See also
 - [https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication](https://kubernetes.io/docs/reference/access-authn-authz/authentication/#webhook-token-authentication)
 
 Choose AAD Integration [V1](#aad-integration-v1) or [V2](#aad-integration-v2)
+Azure AD integration with AKS v2 is designed to simplify the Azure AD integration with AKS v1 experience, where users were required to create a client app, a server app, and required the **Azure AD tenant to grant Directory Read permissions**. In the new version, the AKS resource provider manages the client and server apps for you.
 
 ## AAD Integration V2 
 
 (Currently in Preview)
+[Pre-requistes](https://docs.microsoft.com/en-us/azure/aks/azure-ad-v2#before-you-begin) :
+- The Azure CLI, version 2.2.0 or later
+- The aks-preview 0.4.38 extension
+- Kubectl with a minimum version of **1.18** beta
 
 ```sh
 # TODO
@@ -28,7 +33,7 @@ AKSADM_GRP_ID=$(az ad group create --display-name aks-adm-${appName} --mail-nick
 echo "AKS ADMIN GROUP ID: " $AKSADM_GRP_ID
 az ad group show --group $AKSADM_GRP_ID
 
-# Create aAKS Admin user. The user principal name (someuser@contoso.com) must contain one of the verified domains for the tenant.
+# Create AKS Admin user. The user principal name (someuser@contoso.com) must contain one of the verified domains for the tenant.
 AKSADM_USR_ID=$(az ad user create --display-name "AKS Admin user ${appName}" --user-principal-name "aksadm@groland.grd" --password "P@ssw0rd1" --query objectId -o tsv)
 echo "AKS ADMIN USER ID: " $AKSADM_USR_ID
 az ad user show --id $AKSADM_USR_ID

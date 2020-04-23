@@ -162,6 +162,9 @@ echo "Bastion Subnet Id :" $bastion_subnet_id
 ```sh
 
 # https://github.com/Azure/azure-quickstart-templates/tree/master/101-azure-bastion-nsg
+# https://docs.microsoft.com/en-us/azure/bastion/bastion-nsg
+# NSG sample : https://user-images.githubusercontent.com/47132998/69514141-4f55d380-0f70-11ea-980e-2094bd57de20.png
+# https://github.com/Azure/azure-quickstart-templates/blob/master/101-azure-bastion-nsg/azuredeploy.json
 
 b_nsg="bastion-nsg-management"
 az network nsg create --name $b_nsg -g $rg_bastion_name --location $location

@@ -217,7 +217,11 @@ kubectl create namespace ingress
 # https://www.nginx.com/products/nginx/kubernetes-ingress-controller
 helm install ingress stable/nginx-ingress --namespace ingress
 helm upgrade --install ingress stable/nginx-ingress --namespace ingress
+
+kubectl --namespace ingress get services -o wide ingress-nginx-ingress-controller -w
 ing_ctl_ip=$(kubectl get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+
+
 ```
 
 ```sh
@@ -277,26 +281,30 @@ echo $service_ip
 
 public_ip_id=$(az network public-ip list --subscription $subId --resource-group $managed_rg --query "[?ipAddress!=null]|[?contains(ipAddress, '$service_ip')].[id]" --output tsv)
 echo $public_ip_id
+```
+
 
 In the Azure portal, go to All services / Public IP addresses / kubernetes-xxxx - Configuration ( the Ingress Controller IP) , then there is a field "DNS name label (optional)" ==> An "A record" that starts with the specified label and resolves to this public IP address will be registered with the Azure-provided DNS servers. Example: mylabel.westus.cloudapp.azure.com.
 
+```sh
 az network public-ip show --ids $public_ip_id --subscription $subId --resource-group $managed_rg
-
-az network public-ip update --ids $public_ip_id --dns-name $dns_zone --subscription $subId --resource-group $managed_rg
 
 #http://petclinic.${location}.cloudapp.azure.com
 #http://petclinic.internal.cloudapp.net
 
 #http://petclinic.kissmyapp.${location}.cloudapp.azure.com/ 
-dns_zone="kissmyapp.${location}.cloudapp.azure.com" 
-az network dns zone create -g $rg_name -n $dns_zone
+# dns_zone was set to "cloudapp.azure.com" in set-var
+app_dns_zone="kissmyapp.${location}.${dns_zone}"
+echo "App DNS zone " $app_dns_zone
+az network dns zone create -g $rg_name -n $app_dns_zone
 az network dns zone list -g $rg_name
-az network dns record-set a add-record -g $rg_name -z $dns_zone -n www -a ${service_ip}
-az network dns record-set list -g $rg_name -z $dns_zone
+az network dns record-set a add-record -g $rg_name -z $app_dns_zone -n www -a ${service_ip}
+az network dns record-set list -g $rg_name -z $app_dns_zone
 
-az network dns record-set cname create -g $rg_name -z $dns_zone -n petclinic-ingress
-az network dns record-set cname set-record -g $rg_name -z $dns_zone -n petclinic-ingress -c www.$dns_zone
-az network dns record-set cname show -g $rg_name -z $dns_zone -n petclinic-ingress
+az network dns record-set cname create -g $rg_name -z $app_dns_zone -n petclinic-ingress
+az network dns record-set cname set-record -g $rg_name -z $app_dns_zone -n petclinic-ingress -c www.$app_dns_zone
+az network dns record-set cname show -g $rg_name -z $app_dns_zone -n petclinic-ingress
 http://petclinic-ingress.kissmyapp.${location}.cloudapp.azure.com/ 
 
 
+az network public-ip update --ids $public_ip_id --dns-name $app_dns_zone --subscription $subId --resource-group $managed_rg

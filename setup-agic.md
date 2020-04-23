@@ -20,6 +20,8 @@ Azure Application Gateway can be configured with an Internet-facing VIP or with 
 Issue #[1441](https://github.com/Azure/AKS/issues/1441). See also this [session + slide deck from Ignite](https://myignite.techcommunity.microsoft.com/sessions/82945) .
 With default settings, AGIC assumes [100% ownership of the App Gateway it is pointed to](https://github.com/Azure/application-gateway-kubernetes-ingress/blob/master/docs/setup/install-existing.md#multi-cluster--shared-app-gateway). AGIC overwrites all of App Gateway's configuration. If we were to manually create a listener for prod.contoso.com (on App Gateway), without defining it in the Kubernetes. See also [How-To Minimizing Downtime During Deployments](https://github.com/Azure/application-gateway-kubernetes-ingress/blob/master/docs/how-tos/minimize-downtime-during-deployments.md).
 
+See also [https://github.com/Azure/application-gateway-kubernetes-ingress/blob/master/docs/annotations.md](https://github.com/Azure/application-gateway-kubernetes-ingress/blob/master/docs/annotations.md)
+
 
 ## Create Azure App Gateway v2
 ```sh
