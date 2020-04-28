@@ -37,6 +37,6 @@ az account set --subscription $subId
 az account show
 
 # if you run az cli out of cloudshell (ex: in WSL)
-az login
+az login --username xxx --tenant $tenantId
 
 ```

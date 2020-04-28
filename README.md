@@ -33,9 +33,9 @@ See also :
    1. Setup [KeyVault with Private-Link](setup-kv.md) ~30 minutes
    1. Setup [AKS cluster with Private-Link](setup-aks.md) ~30 minutes
 1. Configure [Kubeconfig access](setup-kubeconfig-access.md)
-1. Setup AKS [node pools](setup_nodepools.md)
+1. Setup AKS [node pools](setup-nodepools.md)
 1. Setup [HELM](setup-helm.md)
-1. Setup [Application Gateway](setup_appgw_waf.md) ~30 minutes
+1. Setup [Application Gateway](setup-appgw-waf.md) ~30 minutes
 1. Setup Azure Policy / [Open Policy Agent](setup-azure-policy-opa-gk.md)
 1. Setup Application Gateway Ingress Controller - [AGIC](setup-agic.md)
 1. Setup Service-Mesh / [Linkerd](setup-linkerd-service-mesh.md)

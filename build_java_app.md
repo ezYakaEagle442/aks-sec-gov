@@ -8,7 +8,7 @@ cd spring-petclinic
 
 # build app
 sudo apt install maven --yes
-mvn package
+mvn package # -DskipTests
 
 # On Azure Zulu JRE located at : /usr/lib/jvm/zulu-8-azure-amd64/
 # to check which process runs eventually already on port 8080 :  netstat -anp | grep 8080 
@@ -34,7 +34,7 @@ echo -e "FROM mcr.microsoft.com/java/jre:11u6-zulu-alpine\n" \
 
 # other app snippet: https://github.com/microsoft/todo-app-java-on-azure/blob/master/deploy/aks/deployment.yml
 
-docker_server=$(az acr show --name $acr_registry_name --resource-group $rg_acr_name --query "loginServer" --output tsv)
+docker_server=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "loginServer" --output tsv)
 echo "Docker server :" $docker_server
 
 docker_private_server="${acr_registry_name}.privatelink.azurecr.io"
@@ -66,16 +66,16 @@ az keyvault secret set \
 
 ACRIdentityName=${appName}ACRTasksIdentity
 echo "ACR Identity Name " :  $ACRIdentityName
-az identity create -g $rg_acr_name --name $ACRIdentityName
+az identity create -g $rg_name --name $ACRIdentityName
 
 # Get resource ID of the user-assigned identity
-IdentityResourceID=$(az identity show -g $rg_acr_name --name  $ACRIdentityName --query id --output tsv)
+IdentityResourceID=$(az identity show -g $rg_name --name  $ACRIdentityName --query id --output tsv)
 
 # Get principal ID of the task's user-assigned identity
-IdentityPrincipalID=$(az identity show -g $rg_acr_name --name  $ACRIdentityName --query principalId --output tsv)
+IdentityPrincipalID=$(az identity show -g $rg_name --name  $ACRIdentityName --query principalId --output tsv)
 
 # Get client ID of the user-assigned identity
-IdentityClientID=$(az identity show -g $rg_acr_name --name  $ACRIdentityName --query clientId --output tsv)
+IdentityClientID=$(az identity show -g $rg_name --name  $ACRIdentityName --query clientId --output tsv)
 
 echo "ACR Identity Resource ID " : $IdentityResourceID
 echo "ACR Identity Principal ID " : $IdentityPrincipalID
@@ -98,10 +98,11 @@ az acr task create \
   --file dockerhubtask.yaml \
   --assign-identity $IdentityResourceID
 
-az acr build -t "${docker_server}/spring-petclinic:{{.Run.ID}}" -r $acr_registry_name -g $rg_acr_name --file Dockerfile .
+az acr build -t "${docker_server}/spring-petclinic:{{.Run.ID}}" -r $acr_registry_name -g $rg_name --file Dockerfile .
 az acr repository list --name $acr_registry_name
 
-build_id=$(az acr task list-runs --registry $acr_registry_name -o json --query "[0].name" )
+build_id=$(az acr task list-runs --registry $acr_registry_name -o json --query [0].name )
+build_id=$(echo $build_id | tr -d '"')
 echo "Successfully pushed image with ID " $build_id
 
 ```
@@ -116,12 +117,16 @@ ${registryname}.azurecr.io/spring-petclinic:{{.Run.ID}}</span>
 ```sh
 
 IMPORTANT TODO !!!! : https://github.com/Azure-Samples/java-on-aks/blob/master/.scripts/e2e-using-aks.sh 
-envsubst < 1-config.yaml > deploy/1-config.yaml
 https://www.linux.org/docs/man1/envsubst.html
 <image>${CONTAINER_REGISTRY}.azurecr.io/${parent.artifactId}-${project.name}:${IMAGE_TAG}</image>
 
+export CONTAINER_REGISTRY=$acr_registry_name
+export IMAGE_TAG=$build_id
+export .Run.ID=$build_id
+envsubst < petclinic-deployment.yaml > deploy/petclinic-deployment.yaml 
+
 #az acr run -r $acr_registry_name --cmd "${docker_server}/spring-petclinic:dd2" /dev/null
-kubectl apply -f petclinic-deployment.yaml -n $target_namespace
+kubectl apply -f deploy/petclinic-deployment.yaml -n $target_namespace
 kubectl get deployments -n $target_namespace
 kubectl get deployment petclinic -n $target_namespace 
 kubectl get pods -l app=petclinic -o wide -n $target_namespace
@@ -153,6 +158,12 @@ Now you have several option to expose your app :
 - [Internal service](#create-kubernetes-internal-service) + [Ingress](#Create-Petclinic-Ingress)
 - [Use App. Gateway Ingress Controller](#AGIC)
 
+
+[https://docs.microsoft.com/en-us/azure/aks/static-ip#apply-a-dns-label-to-the-service](https://docs.microsoft.com/en-us/azure/aks/static-ip#apply-a-dns-label-to-the-service)
+[https://github.com/Azure/AKS/issues/1376](https://github.com/Azure/AKS/issues/1376)
+[https://github.com/kubernetes/kubernetes/pull/85318](https://github.com/kubernetes/kubernetes/pull/85318)
+service.beta.kubernetes.io/azure-dns-label-name annotation muste be set in the service yaml files
+
 ## Create Kubernetes PUBLIC service
 ```sh
 rg_id=$(az group show --name $rg_name --query id)
@@ -164,6 +175,7 @@ echo "RG ID : "  $rg_id
 sp_obj_id=$(az ad sp list --all --query "[?appDisplayName=='${appName}'].{objectId:objectId}" --output tsv)
 echo "Service Principal Object ID:" $sp_obj_id 
 az role assignment create --assignee $sp_obj_id --scope $rg_id --role "Network Contributor"
+az role assignment create --assignee $sp_id --scope $aks_node_rg_id --role "Network Contributor"
 
 # https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#before-you-begin
 # The AKS cluster service principal needs also permission to manage network resources if you use an existing subnet or resource group. In general, assign the Network contributor role to your service principal on the delegated resources
@@ -174,7 +186,11 @@ az role assignment create --assignee $sp_obj_id --scope $rg_id --role "Network C
 
 # az role assignment create --assignee $sp_obj_id --scope $rg_id --role Contributor
 
-kubectl apply -f petclinic-service-lb.yaml -n $target_namespace
+export DNS_LABEL="petclinic-svc.${app_dns_zone}"
+echo "DNS label" $DNS_LABEL
+envsubst < petclinic-service-lb.yaml > deploy/petclinic-service-lb.yaml
+
+kubectl apply -f deploy/petclinic-service-lb.yaml -n $target_namespace
 k get svc -n $target_namespace -o wide
 
 k describe svc petclinic-lb-service -n $target_namespace
@@ -214,6 +230,8 @@ If not already done, apply [HELM Setup](setup-helm.md)
 #### Use HELM to setup the Ingress Controller
 ```sh
 kubectl create namespace ingress
+
+# https://docs.microsoft.com/en-us/azure/aks/ingress-basic
 # https://www.nginx.com/products/nginx/kubernetes-ingress-controller
 helm install ingress stable/nginx-ingress --namespace ingress
 helm upgrade --install ingress stable/nginx-ingress --namespace ingress
@@ -221,6 +239,25 @@ helm upgrade --install ingress stable/nginx-ingress --namespace ingress
 kubectl --namespace ingress get services -o wide ingress-nginx-ingress-controller -w
 ing_ctl_ip=$(kubectl get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
 
+# in case the external IP is stucl in pending state as descibed at https://github.com/Azure/AKS/issues/326
+# https://stackoverflow.com/questions/58204559/aks-load-balancer-static-ip-assignment-not-working-stays-pending
+
+readarray -t nic_collection < <(az network nic list -g ${managed_rg} --query [].name | jq -c '.[]')
+for nic_name in "${nic_collection[@]}"; do
+  echo "--------updating ${nic_name} nic----------"
+  az network nic update -g ${managed_rg} -n $(echo ${nic_name} | xargs)
+  echo "--------${nic_name} nic updated ----------"
+  sleep 5
+done
+
+# https://docs.microsoft.com/en-us/azure/aks/ingress-internal-ip
+# Use Helm to deploy an NGINX ingress controller
+helm install stable/nginx-ingress \
+    --namespace ingress \
+    -f internal-ingress.yaml \
+    --set controller.replicaCount=2 \
+    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
+    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux
 
 ```
 
@@ -294,17 +331,32 @@ az network public-ip show --ids $public_ip_id --subscription $subId --resource-g
 
 #http://petclinic.kissmyapp.${location}.cloudapp.azure.com/ 
 # dns_zone was set to "cloudapp.azure.com" in set-var
-app_dns_zone="kissmyapp.${location}.${dns_zone}"
-echo "App DNS zone " $app_dns_zone
 az network dns zone create -g $rg_name -n $app_dns_zone
 az network dns zone list -g $rg_name
-az network dns record-set a add-record -g $rg_name -z $app_dns_zone -n www -a ${service_ip}
+az network dns record-set a add-record -g $rg_name -z $app_dns_zone -n www -a $service_ip --ttl 300 # (300s = 5 minutes)
 az network dns record-set list -g $rg_name -z $app_dns_zone
 
 az network dns record-set cname create -g $rg_name -z $app_dns_zone -n petclinic-ingress
-az network dns record-set cname set-record -g $rg_name -z $app_dns_zone -n petclinic-ingress -c www.$app_dns_zone
+az network dns record-set cname set-record -g $rg_name -z $app_dns_zone -n petclinic-ingress -c www.$app_dns_zone --ttl 300
 az network dns record-set cname show -g $rg_name -z $app_dns_zone -n petclinic-ingress
-http://petclinic-ingress.kissmyapp.${location}.cloudapp.azure.com/ 
-
 
 az network public-ip update --ids $public_ip_id --dns-name $app_dns_zone --subscription $subId --resource-group $managed_rg
+```
+
+### To test DNS name resolution:
+```sh
+az network dns record-set ns show --resource-group $rg_name --zone-name $dnz_zone --name kissmyapp
+
+# https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns#delegate-the-domain
+# In the registrar's DNS management page, edit the NS records and replace the NS records with the Azure DNS name servers.
+
+# /!\ On your windows station , flush DNS ... : ipconfig /flushdns
+# Mac: sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; say cache flushed
+nslookup $app_dns_zone ns1-08.azure-dns.com
+
+dns_zone_id=$(az network dns zone show --name $dnz_zone -g $rg_name --query id --output tsv)
+echo "DNS Zone ID" $dns_zone_id
+az role assignment create --role "Reader" --assignee $sp_id --scope $rg_id
+az role assignment create --role "Contributor" --assignee $sp_id --scope $dns_zone_id
+
+```

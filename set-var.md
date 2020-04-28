@@ -22,11 +22,14 @@ echo "Target namespace:" $target_namespace
 dns_zone="cloudapp.azure.com" # cloudapp.net # azurewebsites.net 
 echo "DNS Zone is : " $dns_zone
 
+app_dns_zone="kissmyapp.${location}.${dns_zone}"
+echo "App DNS zone " $app_dns_zone
+
 custom_dns="akshandsonlabs.com"
 echo "Custom DNS is : " $custom_dns
 
-# target : version 1.15.7. Note: should be usually orchestrators[-1]
-version=$(az aks get-versions -l $location --query 'orchestrators[-4].orchestratorVersion' -o tsv) 
+# target : version 1.15.10. Note: should be usually orchestrators[-1]
+version=$(az aks get-versions -l $location --query 'orchestrators[-3].orchestratorVersion' -o tsv) 
 echo "version is :" $version 
 
 vault_secret="NoSugarNoStar" 

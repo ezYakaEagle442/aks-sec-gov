@@ -3,7 +3,8 @@ kind: Service
 metadata:
   name: petclinic-lb-service
   #namespace: staging
-  #annotations:
+  annotations:
+        service.beta.kubernetes.io/azure-dns-label-name: $DNS_LABEL
   #      service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 spec:
   ports:

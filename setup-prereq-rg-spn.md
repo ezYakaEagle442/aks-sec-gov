@@ -20,6 +20,9 @@ az storage account create --name $storage_name --kind StorageV2 --sku Standard_L
 ```
 
 # Create Service Principal
+
+Read [https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal](https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal)
+
 ```sh
 # https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal
 # https://docs.microsoft.com/en-us/cli/azure/ad/sp?view=azure-cli-latest#az-ad-sp-create-for-rbac

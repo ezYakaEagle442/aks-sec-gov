@@ -73,6 +73,10 @@ az network vnet subnet update --name $subnet_name --network-security-group nsg-m
 ```
 
 ## Create AKS Cluster
+
+To learn more about UDR, see [https://docs.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview](https://docs.microsoft.com/en-us/azure/virtual-network/virtual-networks-udr-overview)
+
+
 ```sh
 
 # small & cheap VM size : Basic_A1 or Standard_B1s or Standard_F2s_v2
@@ -109,11 +113,11 @@ az aks create --name $cluster_name \
     --enable-managed-identity \
     # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
     # --no-wait ==> When --attach-acr and --enable-managed-identity are both specified, --no-wait is not allowed, please wait until the whole operation succeeds.
-    #--enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId # requires Kubectl client 1.18.x
-    --aad-server-app-id $serverApplicationId \
-    --aad-server-app-secret $serverApplicationSecret \
-    --aad-client-app-id $clientApplicationId \
-    --aad-tenant-id $tenantId
+    --enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId # requires Kubectl client 1.18.x
+    #--aad-server-app-id $serverApplicationId \
+    #--aad-server-app-secret $serverApplicationSecret \
+    #--aad-client-app-id $clientApplicationId \
+    #--aad-tenant-id $tenantId
 
 
     # below is not yet implemented, see https://github.com/Azure/AKS/issues/1441
@@ -163,7 +167,6 @@ echo "AKS API server URL: " $aks_api_server_url
 managed_rg=$(az aks show --resource-group $rg_name --name $cluster_name --query nodeResourceGroup -o tsv)
 echo "CLUSTER_RESOURCE_GROUP:"$managed_rg
 
-
 aks_node_rg_id=$(az group show --name $managed_rg --query id)
 echo $aks_node_rg_id
 
@@ -207,7 +210,7 @@ echo "AKS Private-Link DNS ID :" $private_dns_link_id
 ```
 
 
-# Create JumpOff : not needed as you already have one in the Bastion RG/VNet which is peered with AKS VNet
+## Create JumpOff : not needed as you already have one in the Bastion RG/VNet which is peered with AKS VNet
 
 [Your SSH keys should have been generated at pre-req step](./setup-prereq-rg-spn#generates-your-ssh-keys)
 
@@ -247,7 +250,7 @@ az vm create --name "aks-win-jumpoff" \
 
 ```
 
-# SSH Test
+## SSH Test
 
 ```sh
 ##############################################################################################################################
@@ -309,9 +312,15 @@ az vmss extension set \
     --publisher Microsoft.Azure.ActiveDirectory.LinuxSSH \
     --verbose
 
+# For Debian : Firewall must allow http://security.debian.org & http://deb.debian.org
 kubectl run aks-ssh -it --image=debian --restart=Never -- /bin/sh
-# Firewall must allow http://security.debian.org & http://deb.debian.org
 apt-get update && apt-get install openssh-client -y
+
+# For Alpine: Firewall must allow http://dl-cdn.alpinelinux.org/alpine/v3.11/community , potentially http://dl-4.alpinelinux.org
+kubectl run aks-ssh -it --rm --image=alpine --restart=Never -- /bin/sh
+apk update
+apk add --no-cache openssh
+
 
 ```
 
@@ -319,6 +328,13 @@ Open a new terminal window, not connected to your container, copy your private S
 If needed, change ~/.ssh/id_rsa to location of your private SSH key:
 
 ```sh
+cd ~/.ssh
+tar -zcvf ssh_keys.tar.gz $ssh_key $ssh_key.pub
+
+scp -i ~/.ssh/$ssh_key ssh_keys.tar.gz $bastion_admin_username@$bastion_public_ip_address:~/.ssh
+ssh -i~/.ssh/$ssh_key $bastion_admin_username@$bastion_public_ip_address
+tar -zxvf ~/.ssh/ssh_keys.tar.gz
+
 kubectl cp ~/.ssh/${ssh_key} $(kubectl get pod -l run=aks-ssh -o jsonpath='{.items[0].metadata.name}'):/${ssh_key}
 ```
 
@@ -342,16 +358,26 @@ ssh -i ~/.ssh/${ssh_key} $aks_admin_username@$node0_IP
 systemctl status kubelet
 # systemctl start kubelet
 
+cat /var/log/azure/cluster-provision.log
+sudo cat /etc/kubernetes/azure.json
+
+# TEST
+az vmss run-command invoke -g $managed_rg  \
+  -n $vmss_name \
+  --instance 0 \
+  --scripts "hostname && date && cat /etc/kubernetes/azure.json" --command-id RunShellScript
+
+
 ```
 
 
-# NTP test
+## NTP test
 ```sh
 nc -v -u -z -w 3 ntp.ubuntu.com 123
 ```
 
 
-# Connect to the Cluster
+## Connect to the Cluster
 
 ```sh
 
@@ -363,6 +389,8 @@ kubectl cluster-info
 # Get the id of the service principal configured for AKS
 CLIENT_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "servicePrincipalProfile.clientId" --output tsv)
 echo "CLIENT_ID:" $CLIENT_ID 
+
+
 ```
 
 ## Create Namespaces
@@ -386,6 +414,12 @@ kubectl describe namespace sre
 
 ## Control access to cluster resources using RBAC and Azure Active Directory identities in AKS
 ```sh
+
+# https://github.com/Azure/AKS/issues/1557 : If the custom vnet resides outside of MC_ resource group, you must manually grant needed permission to the system assigned identity associated with the cluster. That’s because AKS resource provider can’t grant any permission outside of MC_ resource group.
+# https://docs.microsoft.com/en-us/azure/aks/use-managed-identity#create-an-aks-cluster-with-managed-identities
+CLI snippet TO BE COMPLETED HERE ...
+
+
 # https://docs.microsoft.com/en-us/azure/aks/azure-ad-rbac
 # https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-identity#use-role-based-access-controls-rbac 
 

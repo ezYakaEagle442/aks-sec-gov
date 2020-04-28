@@ -18,6 +18,8 @@ Azure AD integration with AKS v2 is designed to simplify the Azure AD integratio
 ## AAD Integration V2 
 
 (Currently in Preview)
+For AADv2 you [do not need to be AAD tenant admin](https://github.com/MicrosoftDocs/azure-docs/issues/53378).
+
 [Pre-requistes](https://docs.microsoft.com/en-us/azure/aks/azure-ad-v2#before-you-begin) :
 - The Azure CLI, version 2.2.0 or later
 - The aks-preview 0.4.38 extension

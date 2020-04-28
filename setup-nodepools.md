@@ -87,7 +87,7 @@ az aks nodepool add -g $rg_name -n $spotpool_name_max --cluster-name $cluster_na
 
 # https://azure.microsoft.com/en-us/pricing/calculator/?service=virtual-machines
 # https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/#f-series
-
+# https://github.com/Azure/azure-cli/blob/06cce5b0bf3fe807280b59600001c8213390745c/src/azure-cli/azure/cli/command_modules/acs/custom.py#L3140
 az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_name --mode user \
     --priority Spot \
     --spot-max-price 0.016 \
@@ -97,7 +97,7 @@ az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_na
     --vnet-subnet-id $new_node_pool_subnet_id \
     --zones 1 2 3 \
     --enable-cluster-autoscaler \
-    --min-count=0 \
+    --min-count=1 \
     --max-count=3 \
     --kubernetes-version $version \
     --node-vm-size Standard_F2s_v2 \
@@ -105,6 +105,29 @@ az aks nodepool add -g $rg_name -n $spotpool_name_min --cluster-name $cluster_na
     --os-type Linux # Windows
 
 kubectl get nodes --show-labels
+
+
+```
+
+## Upgrades
+
+[https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-node-pool](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-node-pool)
+[https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-cluster-control-plane-with-multiple-node-pools](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-cluster-control-plane-with-multiple-node-pools)
+```sh
+az aks nodepool list --cluster-name $cluster_name -g $rg_name
+
+az aks get-upgrades -g $rg_name --name $cluster_name
+
+az aks upgrade --control-plane-only \
+    --name $cluster_name \
+    --resource-group $rg_name \
+    --kubernetes-version 1.15.10
+
+az aks nodepool upgrade \
+    --kubernetes-version 1.15.10 \
+    --resource-group $rg_name \
+    --cluster-name $cluster_name \
+    --name $poc_node_pool_name
 
 
 ```
