@@ -417,7 +417,6 @@ kubectl describe namespace sre
 
 # https://github.com/Azure/AKS/issues/1557 : If the custom vnet resides outside of MC_ resource group, you must manually grant needed permission to the system assigned identity associated with the cluster. That’s because AKS resource provider can’t grant any permission outside of MC_ resource group.
 # https://docs.microsoft.com/en-us/azure/aks/use-managed-identity#create-an-aks-cluster-with-managed-identities
-CLI snippet TO BE COMPLETED HERE ...
 
 PoolIdentityName=$cluster_name"-agentpool"
 echo "AKS Agent Pool Identity Name " : $PoolIdentityName
@@ -440,9 +439,9 @@ AzurePolicyIdentityResourceID=$(az identity show -g $managed_rg --name  $AzurePo
 AzurePolicyIdentityPrincipalID=$(az identity show -g $managed_rg --name  $AzurePolicyIdentityName --query principalId --output tsv)
 AzurePolicyIdentityClientID=$(az identity show -g $managed_rg --name  $AzurePolicyIdentityName --query clientId --output tsv)
 
-echo "AKS Agent Pool Identity Resource ID " : $AzurePolicyIdentityResourceID
-echo "AKS Agent Pool Identity Principal ID " : $AzurePolicyIdentityPrincipalID
-echo "AKS Agent Pool Identity Client ID " : $AzurePolicyIdentityClientID
+echo "AKS Azure Policy Identity Resource ID " : $AzurePolicyIdentityResourceID
+echo "AKS Azure Policy Identity Principal ID " : $AzurePolicyIdentityPrincipalID
+echo "AKS Azure Policy Identity Client ID " : $AzurePolicyIdentityClientID
 
 
 # https://docs.microsoft.com/en-us/azure/aks/azure-ad-rbac
@@ -478,16 +477,21 @@ az ad group member add --member-id $AKSSRE_ID --group opssre-${appName}
 # https://kubernetes.io/docs/concepts/overview/kubernetes-api/#api-groups
 # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
 
-kubectl apply -f role-dev-namespace.yaml
+kubectl apply -f ./cnf/role-dev-namespace.yaml
 export DEV_GROUP_OBECT_ID=$APPDEV_ID
 envsubst < ./cnf/rolebinding-dev-namespace.yaml > deploy/rolebinding-dev-namespace.yaml
-kubectl apply -f rolebinding-dev-namespace.yaml
+kubectl apply -f deploy/rolebinding-dev-namespace.yaml
 
 
-kubectl apply -f role-sre-namespace.yaml
+kubectl apply -f ./cnf/role-sre-namespace.yaml
 export SRE_GROUP_OBECT_ID=$OPSSRE_ID
 envsubst < ./cnf/rolebinding-sre-namespace.yaml > deploy/rolebinding-sre-namespace.yaml
-kubectl apply -f rolebinding-sre-namespace.yaml
+kubectl apply -f deploy/rolebinding-sre-namespace.yaml
+
+
+export AKS_ADM_GROUP_OBECT_ID=$AKSADM_GRP_ID
+envsubst < ./cnf/azure-ad-binding.yaml > deploy/azure-ad-binding.yaml
+kubectl apply -f ./cnf/azure-ad-binding.yaml
 
 # Reset the kubeconfig context using the az aks get-credentials command. In a previous section, you set the context using the cluster admin credentials. 
 # The admin user bypasses Azure AD sign in prompts. Without the --admin parameter, the user context is applied that requires all requests to be authenticated using Azure AD.

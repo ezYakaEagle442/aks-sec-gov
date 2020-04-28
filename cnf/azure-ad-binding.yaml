@@ -8,5 +8,5 @@ roleRef:
   name: cluster-admin
 subjects:
 - apiGroup: rbac.authorization.k8s.io
-  kind: User
-  name: userPrincipalName_or_objectId
+  kind: Group
+  name: ${AKS_ADM_GROUP_OBECT_ID}
