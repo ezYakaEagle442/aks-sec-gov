@@ -8,6 +8,7 @@ cd spring-petclinic
 
 # build app
 sudo apt install maven --yes
+mvn -version
 mvn package # -DskipTests
 
 # On Azure Zulu JRE located at : /usr/lib/jvm/zulu-8-azure-amd64/
@@ -40,11 +41,12 @@ echo "Docker server :" $docker_server
 docker_private_server="${acr_registry_name}.privatelink.azurecr.io"
 echo "Docker private server :" $docker_private_server
 
-kubectl -n $target_namespace create secret docker-registry acr-auth \
-        --docker-server=$docker_server \
-        --docker-username=$sp_id \
-        --docker-email="youremail@groland.grd" \
-        --docker-password=$sp_password
+# No Need when ACR is attached to AKS
+#kubectl -n $target_namespace create secret docker-registry acr-auth \
+#        --docker-server=$docker_server \
+#        --docker-username=$sp_id \
+#        --docker-email="youremail@groland.grd" \
+#        --docker-password=$sp_password
 
 kubectl get secrets -n $target_namespace
 
@@ -101,9 +103,12 @@ az acr task create \
 az acr build -t "${docker_server}/spring-petclinic:{{.Run.ID}}" -r $acr_registry_name -g $rg_name --file Dockerfile .
 az acr repository list --name $acr_registry_name
 
+
 build_id=$(az acr task list-runs --registry $acr_registry_name -o json --query [0].name )
 build_id=$(echo $build_id | tr -d '"')
 echo "Successfully pushed image with ID " $build_id
+
+az acr task logs --registry $acr_registry_name --run-id  $build_id
 
 ```
 
@@ -122,7 +127,6 @@ https://www.linux.org/docs/man1/envsubst.html
 
 export CONTAINER_REGISTRY=$acr_registry_name
 export IMAGE_TAG=$build_id
-export .Run.ID=$build_id
 envsubst < petclinic-deployment.yaml > deploy/petclinic-deployment.yaml 
 
 #az acr run -r $acr_registry_name --cmd "${docker_server}/spring-petclinic:dd2" /dev/null

@@ -481,17 +481,26 @@ kubectl apply -f ./cnf/role-dev-namespace.yaml
 export DEV_GROUP_OBECT_ID=$APPDEV_ID
 envsubst < ./cnf/rolebinding-dev-namespace.yaml > deploy/rolebinding-dev-namespace.yaml
 kubectl apply -f deploy/rolebinding-dev-namespace.yaml
-
+k describe role dev-user-full-access -n development
+k describe rolebindings dev-user-access -n development
 
 kubectl apply -f ./cnf/role-sre-namespace.yaml
 export SRE_GROUP_OBECT_ID=$OPSSRE_ID
 envsubst < ./cnf/rolebinding-sre-namespace.yaml > deploy/rolebinding-sre-namespace.yaml
 kubectl apply -f deploy/rolebinding-sre-namespace.yaml
 
-
 export AKS_ADM_GROUP_OBECT_ID=$AKSADM_GRP_ID
 envsubst < ./cnf/azure-ad-binding.yaml > deploy/azure-ad-binding.yaml
-kubectl apply -f ./cnf/azure-ad-binding.yaml
+kubectl apply -f deploy/azure-ad-binding.yaml
+
+k get clusterrolebindings -A
+k describe clusterrolebindings owner-cluster-admin
+k describe clusterrolebindings aks-cluster-admin-binding
+k describe clusterrolebindings aks-cluster-admin-binding-aad
+k get clusterroles -A
+k describe clusterrole admin
+k describe clusterrole cluster-admin
+k describe clusterrole policy-agent
 
 # Reset the kubeconfig context using the az aks get-credentials command. In a previous section, you set the context using the cluster admin credentials. 
 # The admin user bypasses Azure AD sign in prompts. Without the --admin parameter, the user context is applied that requires all requests to be authenticated using Azure AD.

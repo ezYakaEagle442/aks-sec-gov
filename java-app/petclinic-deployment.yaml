@@ -15,7 +15,7 @@ spec:
       spec:
         containers:
         - name: petclinic
-          image: ${registry}.azurecr.io/spring-petclinic:{{.Run.ID}}
+          image: ${CONTAINER_REGISTRY}.azurecr.io/spring-petclinic:${IMAGE_TAG}
           imagePullPolicy: Always
           livenessProbe:
             initialDelaySeconds: 60
@@ -47,5 +47,6 @@ spec:
             name: server
           - containerPort: 8081
             name: management          
-        imagePullSecrets:
-        - name: acr-auth
+        #https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration
+        #imagePullSecrets:
+        #- name: acr-auth

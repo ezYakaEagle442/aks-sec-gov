@@ -18,4 +18,7 @@ helm search repo mongodb
 
 helm repo update
 
+# https://github.com/Azure/aad-pod-identity/tree/master/charts/aad-pod-identity
+helm repo add aad-pod-identity https://raw.githubusercontent.com/Azure/aad-pod-identity/master/charts
+
 ```
