@@ -10,4 +10,4 @@ roleRef:
 subjects:
 - kind: Group
   namespace: sre
-  name: groupObjectId
+  name: ${SRE_GROUP_OBECT_ID}

@@ -41,7 +41,7 @@ echo "New Node-Pool Subnet Id :" $new_node_pool_subnet_id
 # az role definition create --role-definition <role_definition>
 # https://docs.microsoft.com/en-us/azure/aks/load-balancer-standard#before-you-begin ==>  Network contributor
 az role assignment list --assignee $sp_id 
-# az role assignment create --assignee $sp_id --scope $vnet_id --role Contributor
+az role assignment create --assignee $sp_id --scope $vnet_id --role Contributor
 az role assignment create --assignee $sp_id --scope $subnet_id --role "Network contributor"
 
 # When using AGIC , App Gateway runs in AKS VNet

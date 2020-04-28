@@ -419,6 +419,31 @@ kubectl describe namespace sre
 # https://docs.microsoft.com/en-us/azure/aks/use-managed-identity#create-an-aks-cluster-with-managed-identities
 CLI snippet TO BE COMPLETED HERE ...
 
+PoolIdentityName=$cluster_name"-agentpool"
+echo "AKS Agent Pool Identity Name " : $PoolIdentityName
+
+PoolIdentityResourceID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query id --output tsv)
+PoolIdentityPrincipalID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query principalId --output tsv)
+PoolIdentityClientID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query clientId --output tsv)
+
+echo "AKS Agent Pool Identity Resource ID " : $PoolIdentityResourceID
+echo "AKS Agent Pool Identity Principal ID " : $PoolIdentityPrincipalID
+echo "AKS Agent Pool Identity Client ID " : $PoolIdentityClientID
+
+az role assignment create --assignee $PoolIdentityPrincipalID --scope $vnet_id --role "Network contributor"
+az role assignment create --assignee $PoolIdentityClientID --scope $vnet_id --role "Network contributor"
+
+AzurePolicyIdentityName=azurepolicy-${cluster_name}
+echo "AKS Azure Policy Identity Name " : $AzurePolicyIdentityName
+
+AzurePolicyIdentityResourceID=$(az identity show -g $managed_rg --name  $AzurePolicyIdentityName --query id --output tsv)
+AzurePolicyIdentityPrincipalID=$(az identity show -g $managed_rg --name  $AzurePolicyIdentityName --query principalId --output tsv)
+AzurePolicyIdentityClientID=$(az identity show -g $managed_rg --name  $AzurePolicyIdentityName --query clientId --output tsv)
+
+echo "AKS Agent Pool Identity Resource ID " : $AzurePolicyIdentityResourceID
+echo "AKS Agent Pool Identity Principal ID " : $AzurePolicyIdentityPrincipalID
+echo "AKS Agent Pool Identity Client ID " : $AzurePolicyIdentityClientID
+
 
 # https://docs.microsoft.com/en-us/azure/aks/azure-ad-rbac
 # https://docs.microsoft.com/en-us/azure/aks/operator-best-practices-identity#use-role-based-access-controls-rbac 
@@ -454,9 +479,14 @@ az ad group member add --member-id $AKSSRE_ID --group opssre-${appName}
 # https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
 
 kubectl apply -f role-dev-namespace.yaml
+export DEV_GROUP_OBECT_ID=$APPDEV_ID
+envsubst < ./cnf/rolebinding-dev-namespace.yaml > deploy/rolebinding-dev-namespace.yaml
 kubectl apply -f rolebinding-dev-namespace.yaml
 
+
 kubectl apply -f role-sre-namespace.yaml
+export SRE_GROUP_OBECT_ID=$OPSSRE_ID
+envsubst < ./cnf/rolebinding-sre-namespace.yaml > deploy/rolebinding-sre-namespace.yaml
 kubectl apply -f rolebinding-sre-namespace.yaml
 
 # Reset the kubeconfig context using the az aks get-credentials command. In a previous section, you set the context using the cluster admin credentials. 

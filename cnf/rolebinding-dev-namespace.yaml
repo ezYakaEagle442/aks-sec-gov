@@ -10,4 +10,4 @@ roleRef:
 subjects:
 - kind: Group
   namespace: development
-  name: groupObjectId
+  name: ${DEV_GROUP_OBECT_ID}

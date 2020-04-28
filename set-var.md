@@ -6,7 +6,7 @@
 ```sh
 
 # az account list-locations : francecentral | northeurope | westeurope | eastus2
-location=francecentral 
+location=eastus2 
 echo "location is : " $location 
 
 appName="secgov" 

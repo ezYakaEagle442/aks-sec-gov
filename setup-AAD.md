@@ -30,6 +30,14 @@ For AADv2 you [do not need to be AAD tenant admin](https://github.com/MicrosoftD
 az feature register --name AAD-V2 --namespace Microsoft.ContainerService
 az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/AAD-V2')].{Name:name,State:properties.state}"
 
+# Test for CLI
+#cli_sp_password=$(az ad sp create-for-rbac --name cli-$appName --role contributor --query password --output tsv)
+#echo $cli_sp_password
+#appName="cli-${appName}"
+#cli_sp_id=$(az ad sp list --show-mine --query "[?appDisplayName=='${appName}'].{appId:appId}" --output tsv)
+#echo "CLI Service Principal ID:" $cli_sp_id 
+#az login --service-principal --username $cli_sp_id --password  $cli_sp_password --tenant $tenantId
+
 # Create the AKS Admin group in Azure AD
 AKSADM_GRP_ID=$(az ad group create --display-name aks-adm-${appName} --mail-nickname aks-adm-${appName} --query objectId -o tsv)
 echo "AKS ADMIN GROUP ID: " $AKSADM_GRP_ID
