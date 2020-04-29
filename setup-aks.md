@@ -82,8 +82,8 @@ To learn more about UDR, see [https://docs.microsoft.com/en-us/azure/virtual-net
 # small & cheap VM size : Basic_A1 or Standard_B1s or Standard_F2s_v2
 az aks create --name $cluster_name \
     --resource-group $rg_name \
-    --service-principal $sp_id \
-    --client-secret $sp_password \
+    #--service-principal $sp_id \
+    #--client-secret $sp_password \
     --attach-acr $acr_registry_name \
     --aks-custom-headers CustomizedUbuntu=aks-ubuntu-1804 \
     --zones 1 2 3 \

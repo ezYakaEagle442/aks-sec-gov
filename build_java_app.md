@@ -186,11 +186,13 @@ az role assignment create --assignee $sp_id --scope $aks_node_rg_id --role "Netw
 
 # https://github.com/Azure/AKS/issues/326
 # Cannot create more than 20 public IP addresses with static allocation method for this subscription in this region.
-# https://github.com/Azure/AKS/issues/326
 
 # az role assignment create --assignee $sp_obj_id --scope $rg_id --role Contributor
 
-export DNS_LABEL="petclinic-svc.${app_dns_zone}"
+# https://github.com/Azure/AKS/issues/1376 : 
+# https://docs.microsoft.com/en-us/azure/aks/static-ip#apply-a-dns-label-to-the-service
+# do NOT add .${app_dns_zone} at the end of the DNS zone , Azure will then automatically append a default subnet, such as <location>.cloudapp.azure.com (where location is the region you selected), to the name you provide, to create the fully qualified DNS name.
+export DNS_LABEL="petclinic-svc"
 echo "DNS label" $DNS_LABEL
 envsubst < petclinic-service-lb.yaml > deploy/petclinic-service-lb.yaml
 
@@ -201,7 +203,10 @@ k describe svc petclinic-lb-service -n $target_namespace
 
 # Standard load Balancer Use Case
 # Use the command below to retrieve the External-IP of the Service. Make sure to allow a couple of minutes for the Azure Load Balancer to assign a public IP.
-service_ip=$(kubectl get service petclinic-lb-service -n $target_namespace -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+service_ip=$(k get service petclinic-lb-service -n $target_namespace -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+public_ip_id=$(az network public-ip list --subscription $subId --resource-group $managed_rg --query "[?ipAddress!=null]|[?contains(ipAddress, '$service_ip')].[id]" --output tsv)
+echo $public_ip_id
+
 # All config proiperties ref: sur https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html 
 echo "Your service is now exposed through a Cluster IP at http://${service_ip}"
 echo "Check Live Probe with Spring Actuator : http://${service_ip}/manage/health"
@@ -213,8 +218,30 @@ echo "\n"
 # }
 echo "Check spring Management Info at http://${service_ip}/manage/info" -i -X GET
 curl "http://${service_ip}/manage/info" -i -X GET
-```
 
+
+```
+Then [configure DNS](#configure-DNS) ans test the URL access from a browser
+
+### Restrict Restrict Access For LoadBalancer Service
+[https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service](https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service)
+TODO !
+```sh
+
+# Get the IP
+# ip addr show eth3 | grep inet
+# ifconfig -a
+# hostname -I
+# host myip.opendns.com resolver1.opendns.com | grep "myip.opendns.com has address"
+myip=$(dig +short myip.opendns.com @resolver1.opendns.com)
+
+export LB_FW_IP_RANGE="176.134.171.0/24"
+echo "LB IP range allowed for svc : " $LB_FW_IP_RANGE
+export DNS_LABEL="pet-svc-fw"
+echo "DNS label" $DNS_LABEL
+envsubst < petclinic-service-lb-fw.yaml > deploy/petclinic-service-lb-fw.yaml
+
+```
 
 ## Create Kubernetes INTERNAL service
 
@@ -308,12 +335,6 @@ echo ""
 echo "Check spring Management Info at http://petclinic.${ing_ctl_ip}.nip.io/manage/info" -i -X GET
 curl "http://petclinic.${ing_ctl_ip}.nip.io/manage/info" -i -X GET
 
-
-```
-
-### Configure DNS
-
-Free DNS: http://xip.io , https://nip.io, https://freedns.afraid.org, https://dyn.com/dns
 ```sh
 $custom_dns
 #service_ip=$(kubectl get service petclinic-lb-service -n $target_namespace -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
@@ -324,8 +345,15 @@ public_ip_id=$(az network public-ip list --subscription $subId --resource-group 
 echo $public_ip_id
 ```
 
+### Configure DNS
 
-In the Azure portal, go to All services / Public IP addresses / kubernetes-xxxx - Configuration ( the Ingress Controller IP) , then there is a field "DNS name label (optional)" ==> An "A record" that starts with the specified label and resolves to this public IP address will be registered with the Azure-provided DNS servers. Example: mylabel.westus.cloudapp.azure.com.
+Free DNS: http://xip.io , https://nip.io, https://freedns.afraid.org, https://dyn.com/dns
+
+
+
+In the Azure portal, go to All services / Public IP addresses / kubernetes-xxxx - Configuration ( the Ingress Controller IP) , 
+(you will also finf this PIP in AKS MC_ RG)
+then there is a field "DNS name label (optional)" ==> An "A record" that starts with the specified label and resolves to this public IP address will be registered with the Azure-provided DNS servers. Example: mylabel.westus.cloudapp.azure.com.
 
 ```sh
 az network public-ip show --ids $public_ip_id --subscription $subId --resource-group $managed_rg
@@ -344,21 +372,25 @@ az network dns record-set cname create -g $rg_name -z $app_dns_zone -n petclinic
 az network dns record-set cname set-record -g $rg_name -z $app_dns_zone -n petclinic-ingress -c www.$app_dns_zone --ttl 300
 az network dns record-set cname show -g $rg_name -z $app_dns_zone -n petclinic-ingress
 
-az network public-ip update --ids $public_ip_id --dns-name $app_dns_zone --subscription $subId --resource-group $managed_rg
+az network public-ip update --ids $public_ip_id --dns-name kissmyapp --subscription $subId --resource-group $managed_rg
+
 ```
 
 ### To test DNS name resolution:
 ```sh
-az network dns record-set ns show --resource-group $rg_name --zone-name $dnz_zone --name kissmyapp
+ns_server=$(az network dns record-set ns show --resource-group $rg_name --zone-name $app_dns_zone --name @ --query nsRecords[0] --output tsv)
+ns_server_length=$(echo -n $ns_server | wc -c)
+ns_server="${ns_server:0:$ns_server_length-1}"
+echo "Name Server" $ns_server
 
 # https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns#delegate-the-domain
 # In the registrar's DNS management page, edit the NS records and replace the NS records with the Azure DNS name servers.
 
 # /!\ On your windows station , flush DNS ... : ipconfig /flushdns
 # Mac: sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; say cache flushed
-nslookup $app_dns_zone ns1-08.azure-dns.com
+nslookup $app_dns_zone $ns_server
 
-dns_zone_id=$(az network dns zone show --name $dnz_zone -g $rg_name --query id --output tsv)
+dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query nsRecords[0] --output tsv)
 echo "DNS Zone ID" $dns_zone_id
 az role assignment create --role "Reader" --assignee $sp_id --scope $rg_id
 az role assignment create --role "Contributor" --assignee $sp_id --scope $dns_zone_id
