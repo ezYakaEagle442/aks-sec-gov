@@ -1,5 +1,11 @@
 # Azure Arc
 
+See also :
+- [https://azure.microsoft.com/en-us/resources/videos/kubernetes-app-management-with-azure-arc](https://azure.microsoft.com/en-us/resources/videos/kubernetes-app-management-with-azure-arc)
+- []()
+- []()
+- []()
+
 ```sh
 # https://github.com/Azure/azure-arc-kubernetes-preview
 

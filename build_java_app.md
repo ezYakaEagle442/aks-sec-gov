@@ -196,9 +196,8 @@ export DNS_LABEL="petclinic-svc"
 echo "DNS label" $DNS_LABEL
 envsubst < petclinic-service-lb.yaml > deploy/petclinic-service-lb.yaml
 
-kubectl apply -f deploy/petclinic-service-lb.yaml -n $target_namespace
+k apply -f deploy/petclinic-service-lb.yaml -n $target_namespace
 k get svc -n $target_namespace -o wide
-
 k describe svc petclinic-lb-service -n $target_namespace
 
 # Standard load Balancer Use Case
@@ -240,6 +239,10 @@ echo "LB IP range allowed for svc : " $LB_FW_IP_RANGE
 export DNS_LABEL="pet-svc-fw"
 echo "DNS label" $DNS_LABEL
 envsubst < petclinic-service-lb-fw.yaml > deploy/petclinic-service-lb-fw.yaml
+
+k apply -f deploy/petclinic-service-lb-fw.yaml -n $target_namespace
+k get svc -n $target_namespace -o wide
+k describe svc petclinic-lb-fw-svc -n $target_namespace
 
 ```
 
@@ -347,9 +350,17 @@ echo $public_ip_id
 
 ### Configure DNS
 
-Free DNS: http://xip.io , https://nip.io, https://freedns.afraid.org, https://dyn.com/dns
+Free DNS: 
+- [http://xip.io](http://xip.io)
+- [https://nip.io](https://nip.io)
+- [https://freedns.afraid.org](https://freedns.afraid.org)
+- [https://dyn.com/dns](https://dyn.com/dns)
 
-
+See also :
+- [https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md)
+- [https://docs.microsoft.com/en-us/azure/dns](https://docs.microsoft.com/en-us/azure/dns)
+- [https://docs.microsoft.com/en-us/azure/dns/dns-domain-delegation](https://docs.microsoft.com/en-us/azure/dns/dns-domain-delegation)
+- [https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns](https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns)
 
 In the Azure portal, go to All services / Public IP addresses / kubernetes-xxxx - Configuration ( the Ingress Controller IP) , 
 (you will also finf this PIP in AKS MC_ RG)

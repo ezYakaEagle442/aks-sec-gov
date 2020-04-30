@@ -4,10 +4,11 @@ Generate & save nodes [SSH keys](https://docs.microsoft.com/en-us/azure/aks/ssh)
 
 
 See also :
-- []()
+- [https://docs.microsoft.com/en-us/azure/aks/developer-best-practices-pod-security#use-pod-managed-identities](https://docs.microsoft.com/en-us/azure/aks/developer-best-practices-pod-security#use-pod-managed-identities)
 - [https://docs.microsoft.com/en-us/azure/key-vault/key-vault-soft-delete-cli](https://docs.microsoft.com/en-us/azure/key-vault/key-vault-soft-delete-cli)
 - [https://docs.microsoft.com/en-us/azure/key-vault/private-link-service#establish-a-private-link-connection-to-key-vault-using-cli](https://docs.microsoft.com/en-us/azure/key-vault/private-link-service#establish-a-private-link-connection-to-key-vault-using-cli)
-- []()
+- The KeyVault FlexVol solution is now deprecated in favor of [https://github.com/kubernetes-sigs/secrets-store-csi-driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver)
+- [https://github.com/Azure/secrets-store-csi-driver-provider-azure](https://github.com/Azure/secrets-store-csi-driver-provider-azure)
 
 
 ```sh

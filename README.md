@@ -39,6 +39,6 @@ See also :
 1. Setup Azure Policy / [Open Policy Agent](setup-azure-policy-opa-gk.md)
 1. Setup Application Gateway Ingress Controller - [AGIC](setup-agic.md)
 1. Setup Service-Mesh / [Linkerd](setup-linkerd-service-mesh.md)
-1. Setup [Kuberntes REboot Daemon](setup-kured.md)
+1. Setup [Kubernetes REboot Daemon](setup-kured.md)
 1. setup [Azure Arc](setup-azure-arc.md)
 1. SOC / [SIEM Integration](setup-soc-siem-integration.md)
