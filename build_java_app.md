@@ -385,6 +385,16 @@ az network dns record-set cname show -g $rg_name -z $app_dns_zone -n petclinic-i
 
 az network public-ip update --ids $public_ip_id --dns-name kissmyapp --subscription $subId --resource-group $managed_rg
 
+# Custom DNS use case
+az network dns zone create -g $rg_name -n $custom_dns
+az network dns zone list -g $rg_name
+az network dns record-set a add-record -g $rg_name -z kissmyapp -n www -a $service_ip --ttl 300 # (300s = 5 minutes)
+az network dns record-set list -g $rg_name -z $custom_dns
+
+az network dns record-set cname create -g $rg_name -z $custom_dns -n petclinic-lb-delegated-dns
+az network dns record-set cname set-record -g $rg_name -z $custom_dns -n petclinic-lb-delegated-dns -c www.$custom_dns --ttl 300
+az network dns record-set cname show -g $rg_name -z $custom_dns -n petclinic-lb-delegated-dns
+
 ```
 
 ### To test DNS name resolution:
