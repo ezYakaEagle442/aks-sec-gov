@@ -25,12 +25,12 @@ mvn spring-boot:run
 # Java 8 image : mcr.microsoft.com/java/jdk:8u232-zulu-alpine
 # Java 11 image :  mcr.microsoft.com/java/jre:11u6-zulu-alpine
 artifact="spring-petclinic-2.2.0.BUILD-SNAPSHOT.jar"
-echo -e "FROM mcr.microsoft.com/java/jre:11u6-zulu-alpine\n" \
-"VOLUME /tmp \n" \
-"ADD target/${artifact} app.jar \n" \
-"RUN touch /app.jar \n" \
-"EXPOSE 8080 \n" \
-"ENTRYPOINT [ \""java\"", \""-Djava.security.egd=file:/dev/./urandom\"", \""-jar\"", \""/app.jar\"" ] \n"\
+echo -e "FROM mcr.microsoft.com/java/jre:11u6-zulu-alpine\n"\
+"VOLUME /tmp \n"\
+"ADD target/${artifact} app.jar \n"\
+"RUN touch /app.jar \n"\
+"EXPOSE 8080 \n"\
+"ENTRYPOINT [\""java\"", \""-Djava.security.egd=file:/dev/./urandom\"", \""-jar\"", \""/app.jar\""] \n"\
 > Dockerfile
 
 # other app snippet: https://github.com/microsoft/todo-app-java-on-azure/blob/master/deploy/aks/deployment.yml
@@ -144,7 +144,7 @@ If there were no errors, you can skip the snippet below. In case of error, use t
 ```sh
 for pod in $(k get po -n $target_namespace -o=name)
 do
-	k describe $pod | grep -i "Error"
+	k describe pod $pod | grep -i "Error"
 	k logs $pod | grep -i "Error"
     k exec $pod -n $target_namespace -- wget http://localhost:8080/manage/health
     k exec $pod -n $target_namespace -- wget http://localhost:8080/manage/info
@@ -218,6 +218,7 @@ echo "\n"
 echo "Check spring Management Info at http://${service_ip}/manage/info" -i -X GET
 curl "http://${service_ip}/manage/info" -i -X GET
 
+k get endpoints petclinic-lb-service -n $target_namespace -o json
 
 ```
 Then [configure DNS](#configure-DNS) ans test the URL access from a browser
@@ -249,29 +250,45 @@ k describe svc petclinic-lb-fw-svc -n $target_namespace
 ## Create Kubernetes INTERNAL service
 
 ```sh
-kubectl apply -f petclinic-service-cluster-ip.yaml -n $target_namespace
+k apply -f petclinic-service-cluster-ip.yaml -n $target_namespace
 k get svc -n $target_namespace -o wide
+k describe svc petclinic-internal-service -n $target_namespace
 
 # Use the command below to retrieve the Cluster-IP of the Service.
-service_ip=$(kubectl get service petclinic-internal-service -n $target_namespace -o jsonpath="{.spec.clusterIP}")
-kubectl get endpoints petclinic-lb-service -n $target_namespace
+service_ip=$(k get service petclinic-internal-service -n $target_namespace -o jsonpath="{.spec.clusterIP}")
+k get endpoints petclinic-internal-service -n $target_namespace -o json
+
 ```
 
+## Custom Domain delegation
+
+```sh
+k apply -f petclinic-service-lb-delegated-DNS.yaml -n $target_namespace
+k get svc -n $target_namespace -o wide
+k describe svc petclinic-lb-delegated-dns -n $target_namespace
+
+# Standard load Balancer Use Case
+# Use the command below to retrieve the External-IP of the Service. Make sure to allow a couple of minutes for the Azure Load Balancer to assign a public IP.
+service_ip=$(k get service petclinic-lb-delegated-dns -n $target_namespace -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+public_ip_id=$(az network public-ip list --subscription $subId --resource-group $managed_rg --query "[?ipAddress!=null]|[?contains(ipAddress, '$service_ip')].[id]" --output tsv)
+echo $public_ip_id
+```
 
 ### Create Petclinic Ingress
 
 If not already done, apply [HELM Setup](setup-helm.md)
 #### Use HELM to setup the Ingress Controller
 ```sh
-kubectl create namespace ingress
+k create namespace ingress
 
 # https://docs.microsoft.com/en-us/azure/aks/ingress-basic
 # https://www.nginx.com/products/nginx/kubernetes-ingress-controller
-helm install ingress stable/nginx-ingress --namespace ingress
+helm install ingress stable/nginx-ingress --namespace ingress --replace
 helm upgrade --install ingress stable/nginx-ingress --namespace ingress
+helm ls --namespace ingress
 
 kubectl --namespace ingress get services -o wide ingress-nginx-ingress-controller -w
-ing_ctl_ip=$(kubectl get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+ing_ctl_ip=$(k get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
 
 # in case the external IP is stucl in pending state as descibed at https://github.com/Azure/AKS/issues/326
 # https://stackoverflow.com/questions/58204559/aks-load-balancer-static-ip-assignment-not-working-stays-pending
@@ -283,16 +300,31 @@ for nic_name in "${nic_collection[@]}"; do
   echo "--------${nic_name} nic updated ----------"
   sleep 5
 done
-
+```
+### Create Petclinic INTERNAL Ingress
+```sh
 # https://docs.microsoft.com/en-us/azure/aks/ingress-internal-ip
 # Use Helm to deploy an NGINX ingress controller
-helm install stable/nginx-ingress \
+helm install internal-ingress stable/nginx-ingress \
     --namespace ingress \
     -f internal-ingress.yaml \
     --set controller.replicaCount=2 \
     --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
     --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux
 
+helm ls --namespace ingress
+k get svc -n ingress
+#k describe svc internal-ingress-nginx-ingress-default-backend -n ingress
+#k describe svc internal-ingress-nginx-ingress-controller -n ingress
+
+for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
+do
+	k describe svc $s -n ingress # | grep -i "Error"
+done
+
+k get events -n ingress | grep -i "Error"
+
+# sudo helm uninstall internal-ingress -n ingress
 ```
 
 ```sh
@@ -357,10 +389,11 @@ Free DNS:
 - [https://dyn.com/dns](https://dyn.com/dns)
 
 See also :
-- [https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md)
 - [https://docs.microsoft.com/en-us/azure/dns](https://docs.microsoft.com/en-us/azure/dns)
 - [https://docs.microsoft.com/en-us/azure/dns/dns-domain-delegation](https://docs.microsoft.com/en-us/azure/dns/dns-domain-delegation)
 - [https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns](https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns)
+
+To use [External-DNS](./setup-external-dns.md)
 
 In the Azure portal, go to All services / Public IP addresses / kubernetes-xxxx - Configuration ( the Ingress Controller IP) , 
 (you will also finf this PIP in AKS MC_ RG)
@@ -369,10 +402,8 @@ then there is a field "DNS name label (optional)" ==> An "A record" that starts 
 ```sh
 az network public-ip show --ids $public_ip_id --subscription $subId --resource-group $managed_rg
 
-#http://petclinic.${location}.cloudapp.azure.com
-#http://petclinic.internal.cloudapp.net
-
-#http://petclinic.kissmyapp.${location}.cloudapp.azure.com/ 
+# https://docs.microsoft.com/en-us/azure/dns/dns-operations-recordsets-cli
+# https://docs.microsoft.com/en-us/cli/azure/network/dns?view=azure-cli-latest
 # dns_zone was set to "cloudapp.azure.com" in set-var
 az network dns zone create -g $rg_name -n $app_dns_zone
 az network dns zone list -g $rg_name
@@ -388,13 +419,15 @@ az network public-ip update --ids $public_ip_id --dns-name kissmyapp --subscript
 # Custom DNS use case
 az network dns zone create -g $rg_name -n $custom_dns
 az network dns zone list -g $rg_name
-az network dns record-set a add-record -g $rg_name -z kissmyapp -n www -a $service_ip --ttl 300 # (300s = 5 minutes)
+az network dns record-set a add-record -g $rg_name -z $custom_dns -n www -a $service_ip --ttl 300 # (300s = 5 minutes)
 az network dns record-set list -g $rg_name -z $custom_dns
 
-az network dns record-set cname create -g $rg_name -z $custom_dns -n petclinic-lb-delegated-dns
-az network dns record-set cname set-record -g $rg_name -z $custom_dns -n petclinic-lb-delegated-dns -c www.$custom_dns --ttl 300
-az network dns record-set cname show -g $rg_name -z $custom_dns -n petclinic-lb-delegated-dns
+az network dns record-set cname create -g $rg_name -z $custom_dns -n kissmyapp
+az network dns record-set cname set-record -g $rg_name -z $custom_dns -n kissmyapp -c www.$custom_dns --ttl 300
+az network dns record-set cname show -g $rg_name -z $custom_dns -n kissmyapp
 
+az network dns record-set ns show -g $rg_name --zone-name $custom_dns --name @
+# az network dns record-set ns add-record -g $rg_name --zone-name $custom_dns --record-set-name test-ns --nsdname ns1-09.azure-dns.com
 ```
 
 ### To test DNS name resolution:
@@ -411,8 +444,9 @@ echo "Name Server" $ns_server
 # Mac: sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; say cache flushed
 nslookup $app_dns_zone $ns_server
 
-dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query nsRecords[0] --output tsv)
+dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query id --output tsv)
 echo "DNS Zone ID" $dns_zone_id
+# should applied on Identity not on SP
 az role assignment create --role "Reader" --assignee $sp_id --scope $rg_id
 az role assignment create --role "Contributor" --assignee $sp_id --scope $dns_zone_id
 

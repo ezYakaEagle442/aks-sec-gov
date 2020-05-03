@@ -165,7 +165,7 @@ echo "AKS API server URL: " $aks_api_server_url
 # echo $managed_rg
 
 managed_rg=$(az aks show --resource-group $rg_name --name $cluster_name --query nodeResourceGroup -o tsv)
-echo "CLUSTER_RESOURCE_GROUP:"$managed_rg
+echo "CLUSTER_RESOURCE_GROUP:" $managed_rg
 
 aks_node_rg_id=$(az group show --name $managed_rg --query id)
 echo $aks_node_rg_id
