@@ -144,8 +144,8 @@ If there were no errors, you can skip the snippet below. In case of error, use t
 ```sh
 for pod in $(k get po -n $target_namespace -o=name)
 do
-	k describe pod $pod | grep -i "Error"
-	k logs $pod | grep -i "Error"
+	k describe pod $pod -n $target_namespace | grep -i "Error"
+	k logs $pod -n $target_namespace | grep -i "Error"
     k exec $pod -n $target_namespace -- wget http://localhost:8080/manage/health
     k exec $pod -n $target_namespace -- wget http://localhost:8080/manage/info
     # k exec $pod -n $target_namespace -it -- /bin/sh
@@ -283,9 +283,20 @@ k create namespace ingress
 
 # https://docs.microsoft.com/en-us/azure/aks/ingress-basic
 # https://www.nginx.com/products/nginx/kubernetes-ingress-controller
-helm install ingress stable/nginx-ingress --namespace ingress --replace
-helm upgrade --install ingress stable/nginx-ingress --namespace ingress
+helm install ingress stable/nginx-ingress --namespace ingress --set publish-service=namespace/nginx-ingress-controller-svcname
+#helm upgrade --install ingress stable/nginx-ingress --namespace ingress
 helm ls --namespace ingress
+
+k describe svc ingress-nginx-ingress-controller -n ingress
+k get svc -n ingress
+k get ing -n ingress
+
+for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
+do
+	k describe svc $s -n ingress # | grep -i "Error"
+done
+
+k get events -n ingress | grep -i "Error"
 
 kubectl --namespace ingress get services -o wide ingress-nginx-ingress-controller -w
 ing_ctl_ip=$(k get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
@@ -300,9 +311,24 @@ for nic_name in "${nic_collection[@]}"; do
   echo "--------${nic_name} nic updated ----------"
   sleep 5
 done
+
+
+export ING_HOST="ingress-checkpoint."$custom_dns
+echo "INGRESS HOST " $ING_HOST
+envsubst < petclinic-ingress.yaml > deploy/petclinic-ingress.yaml 
+k apply -f petclinic-ingress.yaml -n $target_namespace
+k get ingresses --all-namespaces
+k describe ingress petclinic -n $target_namespace
+
 ```
 ### Create Petclinic INTERNAL Ingress
 ```sh
+
+ # https://github.com/Azure/AKS/issues/1557 : If the custom vnet resides outside of MC_ resource group, you must manually grant needed permission to the system assigned identity associated with the cluster. That’s because AKS resource provider can’t grant any permission outside of MC_ resource group.
+AKS_MI_SERVICE_PRINCIPAL_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "identity.principalId" -o tsv)
+az role assignment create --role "Contributor" --assignee $AKS_MI_SERVICE_PRINCIPAL_ID -g $rg_name
+
+
 # https://docs.microsoft.com/en-us/azure/aks/ingress-internal-ip
 # Use Helm to deploy an NGINX ingress controller
 helm install internal-ingress stable/nginx-ingress \
@@ -313,9 +339,9 @@ helm install internal-ingress stable/nginx-ingress \
     --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux
 
 helm ls --namespace ingress
-k get svc -n ingress
 #k describe svc internal-ingress-nginx-ingress-default-backend -n ingress
 #k describe svc internal-ingress-nginx-ingress-controller -n ingress
+k get svc -n ingress
 
 for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
 do
@@ -324,13 +350,11 @@ done
 
 k get events -n ingress | grep -i "Error"
 
+
 # sudo helm uninstall internal-ingress -n ingress
 ```
 
 ```sh
-kubectl apply -f petclinic-ingress.yaml -n $target_namespace
-kubectl get ingresses --all-namespaces
-kubectl describe ingress petclinic -n $target_namespace
 
 # All config proiperties ref: sur https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html 
 echo "Your service is now exposed through an Ingress Controller at http://${ing_ctl_ip}"

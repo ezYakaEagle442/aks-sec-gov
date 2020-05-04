@@ -117,6 +117,9 @@ spec:
 EOF
 
 k get pods -n $target_namespace
+k get pod pod-identity-demo -n $target_namespace -o wide
+podIP=$(k get pod pod-identity-demo -n $target_namespace -o jsonpath="{.status.podIP}")
+echo "Pod IP" $podIP
 k describe pod pod-identity-demo -n $target_namespace
 k logs pod-identity-demo -n $target_namespace
 k get events -n $target_namespace | grep -i "Error" 

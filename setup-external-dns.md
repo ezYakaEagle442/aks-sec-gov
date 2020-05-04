@@ -42,12 +42,16 @@ echo "AKS Agent Pool Identity Client ID " : $PoolIdentityClientID
 #az role assignment create --assignee $PoolIdentityPrincipalID --scope $rg_id --role "Reader"
 #az role assignment create --assignee $PoolIdentityClientID --scope $rg_id --role "Reader"
 
-az role assignment create --assignee $PoolIdentityClientID  --scope $subnet_id --role "Reader"
+az role assignment create --assignee $PoolIdentityClientID --scope $subnet_id --role "Reader"
 
 # 2. as a contributor to DNS Zone itself
 dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query id --output tsv)
 echo "DNS Zone ID" $dns_zone_id
-az role assignment create --role "Contributor" --assignee <appId GUID> --scope $dns_zone_id
+az role assignment create --role "Contributor" --assignee $PoolIdentityClientID --scope $dns_zone_id
+
+dns_zone_id=$(az network dns zone show --name $custom_dns -g $rg_name --query id --output tsv)
+echo "DNS Zone ID" $dns_zone_id
+az role assignment create --role "Contributor" --assignee $PoolIdentityClientID --scope $dns_zone_id
 
 ```
 
@@ -60,6 +64,20 @@ export EXT_DNS_RG=$rg_name
 envsubst < ./cnf/external-dns.yaml > deploy/external-dns.yaml
 k create -f deploy/external-dns.yaml -n $target_namespace
 
+k get rolebindings -n $target_namespace
+k get roles -n $target_namespace
+k get sa -n $target_namespace
+k get deployments -n $target_namespace
+k get deployment external-dns -n $target_namespace
+k describe deployment external-dns -n $target_namespace
+k get pods -n $target_namespace
+for pod in $(k get pods -n $target_namespace -l app=external-dns -o custom-columns=:metadata.name)
+do
+	k describe pod $pod -n $target_namespace # | grep -i "Error"
+	k logs $pod -n $target_namespace | grep -i "Error"
+done
+
+k get events -n $target_namespace | grep -i "Error" 
 ```
 
 ## Create Ingress 
