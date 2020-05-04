@@ -4,8 +4,8 @@ kind: Ingress
 metadata:
   name: petclinic
   #namespace: staging
-  # annotations:
-  #  kubernetes.io/ingress.class: nginx  
+  annotations:
+    kubernetes.io/ingress.class: nginx  
 spec:
   rules:
   - host: $ING_HOST #petclinic.<public-IP>.nip.io

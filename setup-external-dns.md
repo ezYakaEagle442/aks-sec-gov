@@ -7,6 +7,7 @@ See also :
 - [https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure-private-dns.md](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure-private-dns.md)
 - [https://github.com/kubernetes-sigs/external-dns/issues/1456](https://github.com/kubernetes-sigs/external-dns/issues/1456)
 - [https://github.com/kubernetes-sigs/external-dns/issues/1510](https://github.com/kubernetes-sigs/external-dns/issues/1510)
+- [https://github.com/bitnami/charts/issues/2311](https://github.com/bitnami/charts/issues/2311)
 
 ## Pre-requisites
 ```sh
@@ -88,6 +89,8 @@ See :
 ## Verifying Azure DNS records
 ```sh
 az network dns zone list -g $rg_name
+az network dns record-set list -g $rg_name -z $custom_dns
+az network dns record-set a list -g $rg_name -z $custom_dns
 az network dns record-set list -g $rg_name -z $app_dns_zone
 az network dns record-set a list -g $rg_name -z $app_dns_zone
 
