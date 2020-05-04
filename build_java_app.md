@@ -206,7 +206,7 @@ service_ip=$(k get service petclinic-lb-service -n $target_namespace -o jsonpath
 public_ip_id=$(az network public-ip list --subscription $subId --resource-group $managed_rg --query "[?ipAddress!=null]|[?contains(ipAddress, '$service_ip')].[id]" --output tsv)
 echo $public_ip_id
 
-# All config proiperties ref: sur https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html 
+# All config properties ref: sur https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html 
 echo "Your service is now exposed through a Cluster IP at http://${service_ip}"
 echo "Check Live Probe with Spring Actuator : http://${service_ip}/manage/health"
 curl "http://${service_ip}/manage/health" -i -X GET
@@ -315,8 +315,8 @@ done
 
 export ING_HOST="ingress-checkpoint."$custom_dns
 echo "INGRESS HOST " $ING_HOST
-envsubst < petclinic-ingress.yaml > deploy/petclinic-ingress.yaml 
-k apply -f petclinic-ingress.yaml -n $target_namespace
+envsubst < java-app/petclinic-ingress.yaml > deploy/petclinic-ingress.yaml 
+k apply -f deploy/petclinic-ingress.yaml -n $target_namespace
 k get ingresses --all-namespaces
 k describe ingress petclinic -n $target_namespace
 
