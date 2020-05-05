@@ -38,11 +38,13 @@ az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/A
 #echo "CLI Service Principal ID:" $cli_sp_id 
 #az login --service-principal --username $cli_sp_id --password  $cli_sp_password --tenant $tenantId
 
+# https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-groups-create-azure-portal
 # Create the AKS Admin group in Azure AD
 AKSADM_GRP_ID=$(az ad group create --display-name aks-adm-${appName} --mail-nickname aks-adm-${appName} --query objectId -o tsv)
 echo "AKS ADMIN GROUP ID: " $AKSADM_GRP_ID
 az ad group show --group $AKSADM_GRP_ID
 
+# https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/add-users-azure-active-directory
 # Create AKS Admin user. The user principal name (someuser@contoso.com) must contain one of the verified domains for the tenant.
 AKSADM_USR_ID=$(az ad user create --display-name "AKS Admin user ${appName}" --user-principal-name "aksadm@groland.grd" --password "P@ssw0rd1" --query objectId -o tsv)
 echo "AKS ADMIN USER ID: " $AKSADM_USR_ID

@@ -41,6 +41,7 @@ spec:
     metadata:
       labels:
         app: external-dns
+        aadpodidbinding: $IDENTITY_NAME
     spec:
       serviceAccountName: external-dns
       containers:
@@ -52,6 +53,7 @@ spec:
         - --domain-filter=$DOMAIN_FITER # (optional) limit to only example.com domains; change to match the zone created above.
         - --provider=azure
         - --azure-resource-group=$EXT_DNS_RG # (optional) use the DNS zones from the tutorial's resource group
+        - --log-level=debug
         volumeMounts:
         - name: ext-dns-cnf
           mountPath: /etc/kubernetes

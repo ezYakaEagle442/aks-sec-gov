@@ -283,12 +283,35 @@ k create namespace ingress
 
 # https://docs.microsoft.com/en-us/azure/aks/ingress-basic
 # https://www.nginx.com/products/nginx/kubernetes-ingress-controller
-helm install ingress stable/nginx-ingress --namespace ingress --set publish-service=namespace/nginx-ingress-controller-svcname
-#helm upgrade --install ingress stable/nginx-ingress --namespace ingress
+# https://docs.nginx.com/nginx-ingress-controller/installation/installation-with-helm/
+# https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/
+# https://github.com/nginxinc/kubernetes-ingress/blob/master/docs/nginx-ingress-controllers.md#the-key-differences
+# https://kubernetes.github.io/ingress-nginx/troubleshooting/#ingress-controller-logs-and-events
+# https://kubernetes.github.io/ingress-nginx/user-guide/cli-arguments/
+# https://hub.helm.sh/charts/stable/nginx-ingress
+# https://hub.helm.sh/charts/stable/nginx-ingress/1.36.3
+# https://github.com/helm/charts/tree/master/stable/nginx-ingress
+
+helm show chart stable/nginx-ingress
+helm install ingress stable/nginx-ingress --namespace ingress \
+  --set publish-service=ingress/ingress-nginx-ingress-controller \
+  --set publish-server=true \
+  --set controller.publishService.enabled=true \
+  --set controller.extraArgs.v=5 \
+  # https://github.com/kubernetes/ingress-nginx/blob/master/docs/troubleshooting.md#debug-logging
+  #--set controller.name="ing-ctl-nginx" \
+  #--set defaultBackend.name="default-ing-nginx-backend" \
+  --set log-level=debug
+
+# helm uninstall ingress -n ingress
 helm ls --namespace ingress
 
-k describe svc ingress-nginx-ingress-controller -n ingress
+k get deployments -n ingress -l app=nginx-ingress
+k get deployment ingress-nginx-ingress-controller -n ingress 
+k describe deployment ingress-nginx-ingress-controller -n ingress | grep -i "publish-service"
+
 k get svc -n ingress
+k describe svc ingress-nginx-ingress-controller -n ingress
 k get ing -n ingress
 
 for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
@@ -297,6 +320,15 @@ do
 done
 
 k get events -n ingress | grep -i "Error"
+
+for pod in $(k get po -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
+do
+  pod_name_length=$(echo -n $pod | wc -c)
+  pod_name_begin="${pod:0:21}"
+  if [ "$pod_name_begin" = 'ingress-nginx-ingress' ]; then
+    k logs $pod -n ingress | grep -i "Error"
+  fi
+done
 
 kubectl --namespace ingress get services -o wide ingress-nginx-ingress-controller -w
 ing_ctl_ip=$(k get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
@@ -318,7 +350,10 @@ echo "INGRESS HOST " $ING_HOST
 envsubst < java-app/petclinic-ingress.yaml > deploy/petclinic-ingress.yaml 
 k apply -f deploy/petclinic-ingress.yaml -n $target_namespace
 k get ingresses --all-namespaces
+k get ing petclinic -n $target_namespace -o json
 k describe ingress petclinic -n $target_namespace
+k get events -n $target_namespace | grep -i "Error"
+
 
 ```
 ### Create Petclinic INTERNAL Ingress
@@ -351,7 +386,7 @@ done
 k get events -n ingress | grep -i "Error"
 
 
-# sudo helm uninstall internal-ingress -n ingress
+# helm uninstall internal-ingress -n ingress
 ```
 
 ```sh
@@ -416,6 +451,7 @@ See also :
 - [https://docs.microsoft.com/en-us/azure/dns](https://docs.microsoft.com/en-us/azure/dns)
 - [https://docs.microsoft.com/en-us/azure/dns/dns-domain-delegation](https://docs.microsoft.com/en-us/azure/dns/dns-domain-delegation)
 - [https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns](https://docs.microsoft.com/en-us/azure/dns/dns-delegate-domain-azure-dns)
+- [https://github.com/rhummelmose/private-aks-dns-zone-linker-function-app](https://github.com/rhummelmose/private-aks-dns-zone-linker-function-app)
 
 To use [External-DNS](./setup-external-dns.md)
 
