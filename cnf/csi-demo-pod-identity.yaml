@@ -1,7 +1,7 @@
 apiVersion: "aadpodidentity.k8s.io/v1"
 kind: AzureIdentity
 metadata:
-  name: external-dns-identity
+  name: $IDENTITY_NAME
 spec:
   type: 0
   ResourceID: ${ResourceID}
@@ -12,7 +12,7 @@ spec:
 apiVersion: "aadpodidentity.k8s.io/v1"
 kind: AzureIdentityBinding
 metadata:
-  name: external-dns-identity-binding
+  name: $IDENTITY_NAME-binding
 spec:
-  AzureIdentity: external-dns-identity
+  AzureIdentity: $IDENTITY_NAME
   Selector: $IDENTITY_NAME

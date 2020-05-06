@@ -61,8 +61,9 @@ export POD_ID=xxxxxx
 
 envsubst < ./cnf/secrets-store-csi-provider-class.yaml > deploy/secrets-store-csi-provider-class.yaml
 cat deploy/secrets-store-csi-provider-class.yaml
-k apply -f deploy/secrets-store-csi-provider-class.yaml
-k get secretproviderclasses -A
+k apply -f deploy/secrets-store-csi-provider-class.yaml -n $target_namespace
+k get secretproviderclasses -n $target_namespace
+k describe secretproviderclasses azure-kv-vsegov-xxxxxx -n $target_namespace
 
 envsubst < ./cnf/csi-demo-pod-identity.yaml > deploy/csi-demo-pod-identity.yaml
 cat deploy/csi-demo-pod-identity.yaml
