@@ -71,7 +71,7 @@ nslookup $vault_name.vault.azure.net
 # https://docs.microsoft.com/en-us/cli/azure/keyvault/secret?view=azure-cli-latest#az-keyvault-secret-set
 az keyvault secret set --name $vault_secret_name --value $vault_secret --description "AKS ${appName} Secret" --vault-name $vault_name
 az keyvault secret list --vault-name $vault_name
-az keyvault secret show --vault-name $vault_name --name $vault_secret --output tsv
+az keyvault secret show --vault-name $vault_name --name $vault_secret_name --output tsv
 
 # Test ...
 az vm create --name "kv-test-vm" \

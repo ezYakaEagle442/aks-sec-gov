@@ -1,28 +1,32 @@
 # setup aad-pod-identity
 
-See [https://github.com/Azure/aad-pod-identity](https://github.com/Azure/aad-pod-identity)
-```sh
-k apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
-k get crd -A
-k api-resources
-k get deployments
-k get deployment mic
-k describe deployment mic
-k get pods
-for pod in $(k get pods -l app=mic -o custom-columns=:metadata.name)
-do
-	k describe pod $pod # | grep -i "Error"
-	k logs $pod | grep -i "Error"
-done
+See :
+- [https://github.com/Azure/aad-pod-identity](https://github.com/Azure/aad-pod-identity)
+- [https://medium.com/microsoftazure/pod-identity-5bc0ffb7ebe7](https://medium.com/microsoftazure/pod-identity-5bc0ffb7ebe7)
 
-```
 
 ## Pre-requisites
 
 <span style="color:red">/!\ IMPORTANT </span> : For AKS clusters with limited egress-traffic, Please install pod-identity in kube-system namespace using the [helm charts](https://github.com/Azure/aad-pod-identity/tree/master/charts/aad-pod-identity).
 
 ```sh
-helm install aad-pod-identity/aad-pod-identity
+helm install aad-pod-identity aad-pod-identity/aad-pod-identity --namespace $target_namespace --set azureIdentity.namespace=$target_namespace
+helm ls --namespace $target_namespace 
+
+# k apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
+k get crd -A
+k api-resources
+k describe ds aad-pod-identity-nmi -n $target_namespace 
+k get deployments -n $target_namespace 
+k get deployment aad-pod-identity-mic -n $target_namespace 
+k describe deployment aad-pod-identity-mic -n $target_namespace 
+k get pods -n $target_namespace 
+for pod in $(k get pods -l app.kubernetes.io/component=mic -n $target_namespace -o custom-columns=:metadata.name)
+do
+	k describe pod $pod -n $target_namespace # | grep -i "Error"
+	k logs $pod -n $target_namespace | grep -i "Error"
+done
+
 ```
 
 
@@ -77,6 +81,11 @@ EOF
 k get azureidentity -A
 k get azureidentitybindings -A
 k get azureassignedidentities -A
+
+k describe azureidentity $IDENTITY_NAME -n $target_namespace
+k describe azureidentitybinding $IDENTITY_NAME-binding -n $target_namespace
+k describe azureassignedidentities pod-identity-demo-$target_namespace-$IDENTITY_NAME
+
 ```
 
 ## Default demo
@@ -126,8 +135,23 @@ k delete pod pod-identity-demo -n $target_namespace
  
 ```
 
+## Clean-Up
 ```sh
+k delete pod pod-identity-demo -n $target_namespace
+k delete ds nmi
+k get ds
+k delete deployment mic
+k get deployments
+k delete sa aad-pod-id-mic-service-account
+k delete sa aad-pod-id-nmi-service-account
+k get sa
 
+k delete ClusterRole aad-pod-id-mic-role
+k delete ClusterRole aad-pod-id-nmi-role
+k delete ClusterRoleBinding aad-pod-id-nmi-binding
+k delete ClusterRoleBinding aad-pod-id-mic-binding
+
+helm uninstall aad-pod-identity
 ```
 
 

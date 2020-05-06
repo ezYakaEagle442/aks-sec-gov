@@ -9,6 +9,7 @@ See also :
 - [https://github.com/kubernetes-sigs/external-dns/issues/1510](https://github.com/kubernetes-sigs/external-dns/issues/1510)
 - [https://github.com/bitnami/charts/issues/2311](https://github.com/bitnami/charts/issues/2311)
 - [https://github.com/helm/charts/tree/master/stable/external-dns](https://github.com/helm/charts/tree/master/stable/external-dns)
+- [https://medium.com/microsoftazure/pod-identity-5bc0ffb7ebe7](https://medium.com/microsoftazure/pod-identity-5bc0ffb7ebe7)
 
 ## Pre-requisites
 
@@ -94,11 +95,13 @@ export IDENTITY_ASSIGNMENT_ID="$(az role assignment create --role Reader --assig
 export ResourceID=$IDENTITY_RESOURCE_ID
 export ClientID=$IDENTITY_CLIENT_ID
 envsubst < ./cnf/external-dns-pod-identity.yaml > deploy/external-dns-pod-identity.yaml
+cat deploy/external-dns-pod-identity.yaml
 
-k apply -f  deploy/external-dns-pod-identity.yaml -n $target_namespace
+k apply -f deploy/external-dns-pod-identity.yaml -n $target_namespace
 k get azureidentity -A
 k get azureidentitybindings -A
 k get azureassignedidentities -A
+
 ```
 
 
@@ -111,12 +114,8 @@ export EXT_DNS_RG=$rg_name
 export ResourceID=$IDENTITY_RESOURCE_ID
 export ClientID=$IDENTITY_CLIENT_ID
 envsubst < ./cnf/external-dns.yaml > deploy/external-dns.yaml
+cat deploy/external-dns.yaml
 k create -f deploy/external-dns.yaml -n $target_namespace
-
-# k delete deployment external-dns -n $target_namespace
-# k delete sa external-dns -n $target_namespace
-# k delete role external-dns -n $target_namespace
-# k delete rolebinding external-dns -n $target_namespace
 
 k get rolebindings -n $target_namespace
 k get roles -n $target_namespace
@@ -125,14 +124,28 @@ k get deployments -n $target_namespace
 k get deployment external-dns -n $target_namespace
 k describe deployment external-dns -n $target_namespace
 k rollout status deployment external-dns -n $target_namespace
+k rollout history deployment external-dns -n $target_namespace
 k get pods -n $target_namespace
 for pod in $(k get pods -l app=external-dns -n $target_namespace -o custom-columns=:metadata.name)
 do
 	k describe pod $pod -n $target_namespace # | grep -i "Error"
-	k logs $pod -n $target_namespace | grep -i "Error"
+	k logs $pod -n $target_namespace #| grep -i "Error"
 done
 
 k get events -n $target_namespace | grep -i "Error" 
+
+k exec $pod -n $target_namespace -it sh
+external-dns --version
+
+k describe azureidentity external-dns-identity -n $target_namespace
+k describe azureidentitybinding external-dns-identity-binding -n $target_namespace
+k describe azureassignedidentities external-dns-identity -n $target_namespace
+
+for asi in $(k get azureassignedidentities -o custom-columns=:metadata.name)
+do
+    k describe azureassignedidentities $asi 
+done
+
 ```
 
 ## Create Ingress 
@@ -148,4 +161,13 @@ az network dns record-set a list -g $rg_name -z $custom_dns
 az network dns record-set list -g $rg_name -z $app_dns_zone
 az network dns record-set a list -g $rg_name -z $app_dns_zone
 
+```
+
+## Clean-Up
+```sh
+k delete deployment external-dns -n $target_namespace
+k delete sa external-dns -n $target_namespace
+k delete role external-dns -n $target_namespace
+k delete rolebinding external-dns -n $target_namespace
+k delete secret ext-dns-cnf  -n $target_namespace
 ```

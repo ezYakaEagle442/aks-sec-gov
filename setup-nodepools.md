@@ -124,10 +124,10 @@ az aks upgrade --control-plane-only \
     --kubernetes-version 1.15.10
 
 az aks nodepool upgrade \
-    --kubernetes-version 1.15.10 \
     --resource-group $rg_name \
     --cluster-name $cluster_name \
-    --name $poc_node_pool_name
+    --name $poc_node_pool_name \
+    --kubernetes-version 1.15.10
 
 
 ```
