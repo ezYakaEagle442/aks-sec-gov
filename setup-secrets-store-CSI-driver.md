@@ -54,6 +54,10 @@ az keyvault set-policy -n $vault_name --secret-permissions get --spn $IDENTITY_C
 # set policy to access certs in your keyvault
 az keyvault set-policy -n $vault_name --certificate-permissions get --spn $IDENTITY_CLIENT_ID
 
+export TENANT_ID=$tenantId
+export KV_NAME=$vault_name
+export SECRET_NAME=$vault_secret_name
+export POD_ID=xxxxxx
 
 envsubst < ./cnf/secrets-store-csi-provider-class.yaml > deploy/secrets-store-csi-provider-class.yaml
 cat deploy/secrets-store-csi-provider-class.yaml
