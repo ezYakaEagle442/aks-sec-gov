@@ -330,7 +330,7 @@ do
   fi
 done
 
-kubectl --namespace ingress get services -o wide ingress-nginx-ingress-controller -w
+k get services -n ingress -o wide ingress-nginx-ingress-controller -w
 ing_ctl_ip=$(k get svc -n ingress ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
 
 # in case the external IP is stucl in pending state as descibed at https://github.com/Azure/AKS/issues/326

@@ -37,6 +37,7 @@ spec:
   selector:
     matchLabels:
       app: external-dns
+      aadpodidbinding: $IDENTITY_NAME
   template:
     metadata:
       labels:

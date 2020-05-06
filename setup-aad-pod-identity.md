@@ -42,8 +42,7 @@ export IDENTITY_ASSIGNMENT_ID="$(az role assignment create --role Reader --assig
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
 az identity show --ids $aks_client_id
-az identity show --ids 1be723e3-9327-47c3-8e91-9bac4360c710
-az identity show --name $PoolIdentityName -g $managed_rg
+az identity show --name $PoolIdentityResourceID -g $managed_rg
 # you can see this App. in the portal / then in the AKS MC_ RG
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-contributor
@@ -75,8 +74,8 @@ spec:
   selector: $IDENTITY_NAME
 EOF
 
+k get azureidentity -A
 k get azureidentitybindings -A
-
 k get azureassignedidentities -A
 ```
 

@@ -11,15 +11,28 @@ See also :
 - [https://github.com/helm/charts/tree/master/stable/external-dns](https://github.com/helm/charts/tree/master/stable/external-dns)
 
 ## Pre-requisites
+
 ```sh
+
+export IDENTITY_NAME="ext-dns-pod-identity" #  must consist of lower case 
+
 echo -e "\""tenantId\"": \""$tenantId\""\n"\
 "\""subscriptionId\"": \""$subId\""\n"\
 "\""resourceGroup\"": \""$rg_name\""\n"\
 "\""useManagedIdentityExtension\"": \""true\""\n"\
 > external-dns-mi-azure.json
 
-cat external-dns-mi-azure.json
-k create secret generic ext-dns-cnf --from-file=external-dns-mi-azure.json -n $target_namespace
+echo -e "\""azure:\"" \n"\
+"  \""tenantId\"": \""$tenantId\""\n"\
+"  \""subscriptionId\"": \""$subId\""\n"\
+"  \""resourceGroup\"": \""$rg_name\""\n"\
+"  \""useManagedIdentityExtension\"": \""true\""\n"\
+"\""podLabels:\"" \n"\
+"  \""aadpodidbinding\"": \""$IDENTITY_NAME\""\n"\
+> deploy/external-dns-mi-azure.json
+
+cat deploy/external-dns-mi-azure.json
+k create secret generic ext-dns-cnf --from-file=deploy/external-dns-mi-azure.json -n $target_namespace
 k get secrets -n $target_namespace
 k describe secret ext-dns-cnf  -n $target_namespace
 
@@ -43,8 +56,16 @@ echo "AKS Agent Pool Identity Client ID " : $PoolIdentityClientID
 
 #az role assignment create --assignee $PoolIdentityPrincipalID --scope $rg_id --role "Reader"
 #az role assignment create --assignee $PoolIdentityClientID --scope $rg_id --role "Reader"
-
-az role assignment create --assignee $PoolIdentityClientID --scope $subnet_id --role "Reader"
+# az role assignment create --assignee $PoolIdentityClientID --scope $subnet_id --role "Reader"
+aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
+echo "AKS Cluster Identity Client ID " $aks_client_id
+az identity show --ids $aks_client_id
+az identity show --name $PoolIdentityResourceID -g $managed_rg
+# you can see this App. in the portal / then in the AKS MC_ RG
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-contributor
+az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
+az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_name
 
 # 2. as a contributor to DNS Zone itself
 dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query id --output tsv)
@@ -62,7 +83,6 @@ az role assignment create --role "Contributor" --assignee $PoolIdentityClientID 
 See [https://github.com/kubernetes-sigs/external-dns/issues/1456](https://github.com/kubernetes-sigs/external-dns/issues/1456)
 
 ```sh
-export IDENTITY_NAME="ext-dns-pod-identity" #  must consist of lower case 
 
 # https://github.com/Azure/aad-pod-identity/pull/48
 # https://github.com/Azure/aad-pod-identity/issues/38
@@ -75,7 +95,8 @@ export ResourceID=$IDENTITY_RESOURCE_ID
 export ClientID=$IDENTITY_CLIENT_ID
 envsubst < ./cnf/external-dns-pod-identity.yaml > deploy/external-dns-pod-identity.yaml
 
-k apply -f external-dns-pod-identity.yaml -n $target_namespace
+k apply -f  deploy/external-dns-pod-identity.yaml -n $target_namespace
+k get azureidentity -A
 k get azureidentitybindings -A
 k get azureassignedidentities -A
 ```
@@ -103,8 +124,9 @@ k get sa -n $target_namespace
 k get deployments -n $target_namespace
 k get deployment external-dns -n $target_namespace
 k describe deployment external-dns -n $target_namespace
+k rollout status deployment external-dns -n $target_namespace
 k get pods -n $target_namespace
-for pod in $(k get pods -n $target_namespace -l app=external-dns -o custom-columns=:metadata.name)
+for pod in $(k get pods -l app=external-dns -n $target_namespace -o custom-columns=:metadata.name)
 do
 	k describe pod $pod -n $target_namespace # | grep -i "Error"
 	k logs $pod -n $target_namespace | grep -i "Error"
