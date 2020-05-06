@@ -73,6 +73,14 @@ k get azureidentity -A
 k get azureidentitybindings -A
 k get azureassignedidentities -A
 
+envsubst < ./cnf/secrets-store-csi-demo-pod.yaml > deploy/secrets-store-csi-demo-pod.yaml
+cat deploy/secrets-store-csi-demo-pod.yaml
+k apply -f deploy/secrets-store-csi-demo-pod.yaml -n $target_namespace
+k get po -n $target_namespace
+k describe pod nginx-secrets-store-inline -n $target_namespace
+k logs nginx-secrets-store-inline -n $target_namespace
+k get events -n $target_namespace | grep -i "Error" 
+
 ```
 
 # Test
