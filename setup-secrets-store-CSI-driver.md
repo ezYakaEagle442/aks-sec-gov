@@ -28,6 +28,15 @@ az keyvault secret set --name $vault_secret_name --value $vault_secret --descrip
 az keyvault secret list --vault-name $vault_name
 az keyvault secret show --vault-name $vault_name --name $vault_secret_name --output tsv
 
+az keyvault key create --name key1 --vault-name $vault_name --size 2048 --kty RSA
+az keyvault key list --vault-name $vault_name
+az keyvault key show --name key1 --vault-name $vault_name
+
+aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
+echo "AKS Cluster Identity Client ID " $aks_client_id
+az role assignment create --role Reader --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_kv_name/providers/Microsoft.KeyVault/vaults/$vault_name # $kv_id
+
+
 ```
 
 # Create an Azure User Identity
@@ -41,11 +50,9 @@ export IDENTITY_NAME="${appName}-csi-demo-pod-identity" #  must consist of lower
 # https://github.com/Azure/aad-pod-identity/pull/48
 # https://github.com/Azure/aad-pod-identity/issues/38
 az identity create -g $rg_name -n $IDENTITY_NAME
-export IDENTITY_CLIENT_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query clientId -otsv)"
-export IDENTITY_RESOURCE_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query id -otsv)"
+export IDENTITY_CLIENT_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query clientId -o tsv)"
+export IDENTITY_RESOURCE_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query id -o tsv)"
 export IDENTITY_ASSIGNMENT_ID="$(az role assignment create --role Reader --assignee $IDENTITY_CLIENT_ID --scope /subscriptions/$subId/resourceGroups/$rg_name --query id -o tsv)"
-
-az role assignment create --role Reader --assignee $IDENTITY_CLIENT_ID --scope $kv_id
 
 # set policy to access keys in your keyvault
 az keyvault set-policy -n $vault_name --key-permissions get --spn $IDENTITY_CLIENT_ID
@@ -57,7 +64,7 @@ az keyvault set-policy -n $vault_name --certificate-permissions get --spn $IDENT
 export TENANT_ID=$tenantId
 export KV_NAME=$vault_name
 export SECRET_NAME=$vault_secret_name
-export POD_ID=xxxxxx
+export POD_ID=xxx
 
 envsubst < ./cnf/secrets-store-csi-provider-class.yaml > deploy/secrets-store-csi-provider-class.yaml
 cat deploy/secrets-store-csi-provider-class.yaml
@@ -65,6 +72,8 @@ k apply -f deploy/secrets-store-csi-provider-class.yaml -n $target_namespace
 k get secretproviderclasses -n $target_namespace
 k describe secretproviderclasses azure-kv-vsegov-xxxxxx -n $target_namespace
 
+export ResourceID=$IDENTITY_RESOURCE_ID
+export ClientID=$IDENTITY_CLIENT_ID
 envsubst < ./cnf/csi-demo-pod-identity.yaml > deploy/csi-demo-pod-identity.yaml
 cat deploy/csi-demo-pod-identity.yaml
 
@@ -73,13 +82,26 @@ k get azureidentity -A
 k get azureidentitybindings -A
 k get azureassignedidentities -A
 
+k describe azureidentity $IDENTITY_NAME -n $target_namespace
+k describe azureidentitybinding $IDENTITY_NAME-binding -n $target_namespace
+k describe azureassignedidentities $IDENTITY_NAME -n $target_namespace
+
 envsubst < ./cnf/secrets-store-csi-demo-pod.yaml > deploy/secrets-store-csi-demo-pod.yaml
 cat deploy/secrets-store-csi-demo-pod.yaml
 k apply -f deploy/secrets-store-csi-demo-pod.yaml -n $target_namespace
 k get po -n $target_namespace
+k get events -n $target_namespace | grep -i "Error" 
 k describe pod nginx-secrets-store-inline -n $target_namespace
 k logs nginx-secrets-store-inline -n $target_namespace
-k get events -n $target_namespace | grep -i "Error" 
+
+
+vmss_name=$(az vmss list -g $managed_rg --query [0].name -o tsv)
+echo "VMSS name: " $vmss_name
+
+node0_name=$(az vmss list-instances --name $vmss_name -g $managed_rg --query [0].name -o tsv)
+echo "Node0 VM name: " $node0_name
+
+az vmss identity show -g $managed_rg --name $vmss_name
 
 ```
 
@@ -87,4 +109,7 @@ k get events -n $target_namespace | grep -i "Error"
 
 ```sh
 k exec -it nginx-secrets-store-inline-podid ls /mnt/secrets-store/
+
+# https://github.com/Azure/aad-pod-identity/issues/583
+# 
 ```

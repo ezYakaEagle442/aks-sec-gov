@@ -4,8 +4,8 @@ metadata:
   name: $IDENTITY_NAME
 spec:
   type: 0
-  ResourceID: ${ResourceID}
-  ClientID: ${ClientID}
+  resourceID: ${ResourceID}
+  clientID: ${ClientID}
 
 ---
 
@@ -14,5 +14,5 @@ kind: AzureIdentityBinding
 metadata:
   name: $IDENTITY_NAME-binding
 spec:
-  AzureIdentity: $IDENTITY_NAME
-  Selector: $IDENTITY_NAME
+  azureIdentity: $IDENTITY_NAME
+  selector: $IDENTITY_NAME
