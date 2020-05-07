@@ -3,18 +3,18 @@
 apiVersion: "aadpodidentity.k8s.io/v1"
 kind: AzureIdentity
 metadata:
-  name: csi-demo-pod-identity
+  name: $IDENTITY_NAME
 spec:
   type: 0
-  ResourceID: ${ResourceID}
-  ClientID: ${ClientID}
+  resourceID: ${ResourceID}
+  clientID: ${ClientID}
 
 ---
 
 apiVersion: "aadpodidentity.k8s.io/v1"
 kind: AzureIdentityBinding
 metadata:
-  name: csi-demo-pod-identity-binding
+  name: $IDENTITY_NAME-binding
 spec:
-  AzureIdentity: csi-demo-pod-identity
-  Selector: $IDENTITY_NAME
+  azureIdentity: $IDENTITY_NAME
+  selector: $IDENTITY_NAME

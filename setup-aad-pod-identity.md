@@ -38,15 +38,15 @@ export IDENTITY_NAME="${appName}-pod-identity" #  must consist of lower case
 # https://github.com/Azure/aad-pod-identity/pull/48
 # https://github.com/Azure/aad-pod-identity/issues/38
 az identity create -g $rg_name -n $IDENTITY_NAME
-export IDENTITY_CLIENT_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query clientId -otsv)"
+export IDENTITY_CLIENT_ID="$(az identity show -g $IDENTITY_NAME -n $IDENTITY_NAME --query clientId -otsv)"
 export IDENTITY_RESOURCE_ID="$(az identity show -g $rg_name -n $IDENTITY_NAME --query id -otsv)"
 export IDENTITY_ASSIGNMENT_ID="$(az role assignment create --role Reader --assignee $IDENTITY_CLIENT_ID --scope /subscriptions/$subId/resourceGroups/$rg_name --query id -o tsv)"
+az identity show --name $IDENTITY_NAME -g $rg_name
 
 # Your cluster will need the correct role assignment configuration to perform Azure-related operations such as assigning and un-assigning the identity on the underlying VM/VMSS. Please refer to https://github.com/Azure/aad-pod-identity/blob/master/docs/readmes/README.role-assignment.md
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
-az identity show --ids $aks_client_id
-az identity show --name $PoolIdentityResourceID -g $managed_rg
+az identity show --ids $PoolIdentityResourceID
 # you can see this App. in the portal / then in the AKS MC_ RG
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-contributor

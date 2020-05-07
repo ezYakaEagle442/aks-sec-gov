@@ -113,5 +113,5 @@ k exec -it nginx-secrets-store-inline -n $target_namespace -- cat /mnt/secrets-s
 k exec -it nginx-secrets-store-inline -n $target_namespace -- cat /mnt/secrets-store/$vault_secret_name
 
 # https://github.com/Azure/aad-pod-identity/issues/583
-# 
+# https://github.com/Azure/aad-pod-identity#v160-breaking-change 
 ```

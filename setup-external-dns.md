@@ -49,19 +49,21 @@ echo "AKS Agent Pool Identity Name " : $PoolIdentityName
 
 PoolIdentityResourceID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query id --output tsv)
 PoolIdentityPrincipalID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query principalId --output tsv)
-PoolIdentityClientID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query clientId --output tsv)
+PoolIdentityClientID=$(az identity show -g $managed_rg --name $PoolIdentityName --query clientId --output tsv)
 
 echo "AKS Agent Pool Identity Resource ID " : $PoolIdentityResourceID
 echo "AKS Agent Pool Identity Principal ID " : $PoolIdentityPrincipalID
 echo "AKS Agent Pool Identity Client ID " : $PoolIdentityClientID
+
+az identity show --name $IDENTITY_NAME -g $rg_name
 
 #az role assignment create --assignee $PoolIdentityPrincipalID --scope $rg_id --role "Reader"
 #az role assignment create --assignee $PoolIdentityClientID --scope $rg_id --role "Reader"
 # az role assignment create --assignee $PoolIdentityClientID --scope $subnet_id --role "Reader"
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
-az identity show --ids $aks_client_id
-az identity show --name $PoolIdentityResourceID -g $managed_rg
+az identity show --ids $PoolIdentityResourceID
+
 # you can see this App. in the portal / then in the AKS MC_ RG
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-contributor
@@ -169,5 +171,5 @@ k delete deployment external-dns -n $target_namespace
 k delete sa external-dns -n $target_namespace
 k delete role external-dns -n $target_namespace
 k delete rolebinding external-dns -n $target_namespace
-k delete secret ext-dns-cnf  -n $target_namespace
+k delete secret ext-dns-cnf -n $target_namespace
 ```
