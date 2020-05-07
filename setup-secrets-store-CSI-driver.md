@@ -70,7 +70,7 @@ envsubst < ./cnf/secrets-store-csi-provider-class.yaml > deploy/secrets-store-cs
 cat deploy/secrets-store-csi-provider-class.yaml
 k apply -f deploy/secrets-store-csi-provider-class.yaml -n $target_namespace
 k get secretproviderclasses -n $target_namespace
-k describe secretproviderclasses azure-kv-vsegov-xxxxxx -n $target_namespace
+k describe secretproviderclasses azure-kv-vsegov-xxx -n $target_namespace
 
 export ResourceID=$IDENTITY_RESOURCE_ID
 export ClientID=$IDENTITY_CLIENT_ID
@@ -108,7 +108,9 @@ az vmss identity show -g $managed_rg --name $vmss_name
 # Test
 
 ```sh
-k exec -it nginx-secrets-store-inline-podid ls /mnt/secrets-store/
+k exec -it nginx-secrets-store-inline -n $target_namespace -- ls /mnt/secrets-store/ 
+k exec -it nginx-secrets-store-inline -n $target_namespace -- cat /mnt/secrets-store/key1
+k exec -it nginx-secrets-store-inline -n $target_namespace -- cat /mnt/secrets-store/$vault_secret_name
 
 # https://github.com/Azure/aad-pod-identity/issues/583
 # 
