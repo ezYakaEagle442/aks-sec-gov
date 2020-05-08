@@ -1,11 +1,10 @@
-# https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md#manifest-for-clusters-with-rbac-enabled-cluster-access
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: external-dns
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: external-dns
 rules:
@@ -17,12 +16,12 @@ rules:
   verbs: ["get","watch","list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: external-dns
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: external-dns
 subjects:
 - kind: ServiceAccount
