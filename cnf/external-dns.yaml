@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: external-dns
+  namespace: $NAMESPACE
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -27,11 +28,13 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: external-dns
+  namespace: $NAMESPACE
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: external-dns
+  namespace: $NAMESPACE
 spec:
   strategy:
     type: Recreate
