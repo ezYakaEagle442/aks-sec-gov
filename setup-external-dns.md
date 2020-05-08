@@ -17,23 +17,20 @@ See also :
 
 export IDENTITY_NAME="ext-dns-pod-identity" #  must consist of lower case 
 
-echo -e "\""tenantId\"": \""$tenantId\""\n"\
-"\""subscriptionId\"": \""$subId\""\n"\
-"\""resourceGroup\"": \""$rg_name\""\n"\
-"\""useManagedIdentityExtension\"": \""true\""\n"\
-> external-dns-mi-azure.json
+echo -e "{\n"\
+"\""tenantId\"": \""$tenantId\"",\n"\
+"\""subscriptionId\"": \""$subId\"",\n"\
+"\""resourceGroup\"": \""$rg_name\"",\n"\
+"\""useManagedIdentityExtension\"": true\n"\
+"}\n"\
+> deploy/azure.json # IMPORTANT : /etc/kubernetes/azure.json SHOULD NOT BE RENAMED !!! deploy/external-dns-mi-azure.json will fail, see https://github.com/kubernetes-sigs/external-dns/issues/1556
 
-echo -e "\""azure:\"" \n"\
-"  \""tenantId\"": \""$tenantId\""\n"\
-"  \""subscriptionId\"": \""$subId\""\n"\
-"  \""resourceGroup\"": \""$rg_name\""\n"\
-"  \""useManagedIdentityExtension\"": \""true\""\n"\
-"\""podLabels:\"" \n"\
-"  \""aadpodidbinding\"": \""$IDENTITY_NAME\""\n"\
-> deploy/external-dns-mi-azure.json
+# https://github.com/kubernetes-sigs/external-dns/pull/1422
+# https://github.com/kubernetes-sigs/external-dns/blob/master/provider/azure.go
+# https://github.com/kubernetes-sigs/external-dns/blob/1aea21f6ae9e7c0796f523a7aa0be7519d1c86fa/pkg/apis/externaldns/types.go#L176
 
-cat deploy/external-dns-mi-azure.json
-k create secret generic ext-dns-cnf --from-file=deploy/external-dns-mi-azure.json -n $target_namespace
+cat deploy/azure.json
+k create secret generic ext-dns-cnf --from-file=deploy/azure.json -n $target_namespace
 k get secrets -n $target_namespace
 k describe secret ext-dns-cnf  -n $target_namespace
 
@@ -47,8 +44,8 @@ echo "CLIENT_ID:" $CLIENT_ID
 PoolIdentityName=$cluster_name"-agentpool"
 echo "AKS Agent Pool Identity Name " : $PoolIdentityName
 
-PoolIdentityResourceID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query id --output tsv)
-PoolIdentityPrincipalID=$(az identity show -g $managed_rg --name  $PoolIdentityName --query principalId --output tsv)
+PoolIdentityResourceID=$(az identity show -g $managed_rg --name $PoolIdentityName --query id --output tsv)
+PoolIdentityPrincipalID=$(az identity show -g $managed_rg --name $PoolIdentityName --query principalId --output tsv)
 PoolIdentityClientID=$(az identity show -g $managed_rg --name $PoolIdentityName --query clientId --output tsv)
 
 echo "AKS Agent Pool Identity Resource ID " : $PoolIdentityResourceID
@@ -69,15 +66,8 @@ az identity show --ids $PoolIdentityResourceID
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-contributor
 az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
 az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_name
-
-# 2. as a contributor to DNS Zone itself
-dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query id --output tsv)
-echo "DNS Zone ID" $dns_zone_id
-az role assignment create --role "Contributor" --assignee $PoolIdentityClientID --scope $dns_zone_id
-
-dns_zone_id=$(az network dns zone show --name $custom_dns -g $rg_name --query id --output tsv)
-echo "DNS Zone ID" $dns_zone_id
-az role assignment create --role "Contributor" --assignee $PoolIdentityClientID --scope $dns_zone_id
+az role assignment list --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_name
+az role assignment list --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
 
 ```
 
@@ -104,23 +94,37 @@ k get azureidentity -A
 k get azureidentitybindings -A
 k get azureassignedidentities -A
 
+# 2. as a contributor to DNS Zone itself
+dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query id --output tsv)
+echo "DNS Zone ID" $dns_zone_id
+az role assignment create --role "Contributor" --assignee $IDENTITY_CLIENT_ID --scope $dns_zone_id
+az role assignment list --assignee $IDENTITY_CLIENT_ID --scope $dns_zone_id
+
+dns_zone_id=$(az network dns zone show --name $custom_dns -g $rg_name --query id --output tsv)
+echo "DNS Zone ID" $dns_zone_id
+az role assignment create --role "Contributor" --assignee $IDENTITY_CLIENT_ID --scope $dns_zone_id
+az role assignment list --assignee $IDENTITY_CLIENT_ID --scope $dns_zone_id
+
 ```
 
 
 ## Use Manifest 
-for clusters with [RBAC enabled, namespace access](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md#manifest-for-clusters-with-rbac-enabled-namespace-access)
+for clusters with [RBAC enabled, CLUSTER access](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md#manifest-for-clusters-with-rbac-enabled-cluster-access)
+
+NOT [RBAC enabled, namespace access](https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/azure.md#manifest-for-clusters-with-rbac-enabled-namespace-access)
 
 ```sh
 export DOMAIN_FITER=$custom_dns
 export EXT_DNS_RG=$rg_name
 export ResourceID=$IDENTITY_RESOURCE_ID
 export ClientID=$IDENTITY_CLIENT_ID
+export NAMESPACE=$target_namespace
 envsubst < ./cnf/external-dns.yaml > deploy/external-dns.yaml
 cat deploy/external-dns.yaml
-k create -f deploy/external-dns.yaml -n $target_namespace
+k create -f deploy/external-dns.yaml # -n $target_namespace
 
-k get rolebindings -n $target_namespace
-k get roles -n $target_namespace
+k get rolebindings # -n $target_namespace
+k get roles # -n $target_namespace
 k get sa -n $target_namespace
 k get deployments -n $target_namespace
 k get deployment external-dns -n $target_namespace
@@ -134,26 +138,42 @@ do
 	k logs $pod -n $target_namespace #| grep -i "Error"
 done
 
+# https://github.com/kubernetes-sigs/external-dns/blob/master/docs/faq.md#why-am-i-seeing-time-out-errors-even-though-i-have-connectivity-to-my-cluster
+# If you're seeing an error such as this: failed to sync cache: timed out waiting for the condition
+# you may not have the correct permissions required to query all the necessary resources in your kubernetes cluster. Specifically, you may be running in a namespace that you don't have these permissions in
+
 k get events -n $target_namespace | grep -i "Error" 
 
 k exec $pod -n $target_namespace -it sh
 external-dns --version
+ls /etc/kubernetes
+cat /etc/kubernetes/azure.json
+exit
 
-k describe azureidentity external-dns-identity -n $target_namespace
-k describe azureidentitybinding external-dns-identity-binding -n $target_namespace
-k describe azureassignedidentities external-dns-identity -n $target_namespace
+k get azureidentity -n $target_namespace
+k get azureidentitybindings -n $target_namespace
+k get clusterrole external-dns
+k get clusterrolebinding external-dns
+
+k get azureassignedidentities # -n $target_namespace
+
+k describe azureidentity $IDENTITY_NAME -n $target_namespace
+k describe azureidentitybinding $IDENTITY_NAME-binding -n $target_namespace
 
 for asi in $(k get azureassignedidentities -o custom-columns=:metadata.name)
 do
+  if [ "$asi" = "$pod-$target_namespace-$IDENTITY_NAME" ]; then
     k describe azureassignedidentities $asi 
+  fi
 done
+
 
 ```
 
 ## Create Ingress 
 
 See :
-1. [build_java_app.md](./build_java_app.md#create-kubernetes-internal-service)
+1. [build_java_app.md](./build_java_app.md#create-petclinic-ingress-service)
 
 ## Verifying Azure DNS records
 ```sh
@@ -171,5 +191,11 @@ k delete deployment external-dns -n $target_namespace
 k delete sa external-dns -n $target_namespace
 k delete role external-dns -n $target_namespace
 k delete rolebinding external-dns -n $target_namespace
+k delete clusterroles external-dns
+k delete clusterrolebinding external-dns
 k delete secret ext-dns-cnf -n $target_namespace
+
+k delete azureidentitybinding $IDENTITY_NAME-binding -n $target_namespace
+k delete azureidentity $IDENTITY_NAME -n $target_namespace
+k delete azureassignedidentities $asi
 ```

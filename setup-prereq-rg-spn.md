@@ -53,7 +53,26 @@ az ad sp show --id $sp_id
 
 <span style="color:red">/!\ IMPORTANT </span> :  check & save your ssh_passphrase !!!
 
+Generate & save nodes [SSH keys](https://docs.microsoft.com/en-us/azure/aks/ssh) to Azure Key-Vault is a [Best-practice](https://github.com/Azure/k8s-best-practices/blob/master/Security_securing_a_cluster.md#securing-host-access)
+
 ```sh
 ssh-keygen -t rsa -b 4096 -N $ssh_passphrase -f ~/.ssh/$ssh_key -C "youremail@groland.grd"
+
+# https://www.ssh.com/ssh/keygen/
+# -y Read a private OpenSSH format file and print an OpenSSH public key to stdout.
+# ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+# ssh-keygen -l -f ~/.ssh/id_rsa
+# az keyvault key create --name $ssh_key --vault-name $vault_name --size 2048 --kty RSA
+az keyvault key import --name $ssh_key --vault-name $vault_name --pem-file ~/.ssh/$ssh_key --pem-password $ssh_passphrase
+az keyvault key list --vault-name $vault_name
+az keyvault key show --name $ssh_key --vault-name $vault_name
+az keyvault key download --name $ssh_key --vault-name $vault_name --encoding PEM --file key2
+cat key1
+ls -al key1
+file key1
+stat key1
+ls -lApst key1
+chmod go-rw key1
+ssh-keygen -y -f key1.pem > key1.pub
 
 ```

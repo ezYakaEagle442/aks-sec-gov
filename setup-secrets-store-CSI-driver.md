@@ -3,6 +3,10 @@ See also :
 - [https://github.com/Azure/secrets-store-csi-driver-provider-azure](https://github.com/Azure/secrets-store-csi-driver-provider-azure)
 - [https://docs.microsoft.com/en-us/azure/aks/developer-best-practices-pod-security#limit-credential-exposure](https://docs.microsoft.com/en-us/azure/aks/developer-best-practices-pod-security#limit-credential-exposure)
 
+CSI driver provides the ability to [sync with Kubernetes secrets, which can then be referenced by an environment variable.](https://github.com/kubernetes-sigs/secrets-store-csi-driver#optional-sync-with-kubernetes-secrets)
+
+
+
 # Install the Secrets Store CSI Driver and the Azure Keyvault Provider
 
 [Installing the Chart](https://github.com/Azure/secrets-store-csi-driver-provider-azure/blob/master/charts/csi-secrets-store-provider-azure/README.md)

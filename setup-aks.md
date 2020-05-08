@@ -82,8 +82,6 @@ To learn more about UDR, see [https://docs.microsoft.com/en-us/azure/virtual-net
 # small & cheap VM size : Basic_A1 or Standard_B1s or Standard_F2s_v2
 az aks create --name $cluster_name \
     --resource-group $rg_name \
-    #--service-principal $sp_id \
-    #--client-secret $sp_password \
     --attach-acr $acr_registry_name \
     --aks-custom-headers CustomizedUbuntu=aks-ubuntu-1804 \
     --zones 1 2 3 \
@@ -111,6 +109,8 @@ az aks create --name $cluster_name \
     --enable-private-cluster \
     --enable-addons azure-policy \
     --enable-managed-identity \
+    #--service-principal $sp_id \ ==> you do not need it when enabling managed-identity
+    #--client-secret $sp_password \ ==> you do not need it when enabling managed-identity
     # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
     # --no-wait ==> When --attach-acr and --enable-managed-identity are both specified, --no-wait is not allowed, please wait until the whole operation succeeds.
     --enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId # requires Kubectl client 1.18.x

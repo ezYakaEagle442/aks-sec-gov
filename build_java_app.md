@@ -348,6 +348,7 @@ done
 export ING_HOST="ingress-checkpoint."$custom_dns
 echo "INGRESS HOST " $ING_HOST
 envsubst < java-app/petclinic-ingress.yaml > deploy/petclinic-ingress.yaml 
+cat deploy/petclinic-ingress.yaml 
 k apply -f deploy/petclinic-ingress.yaml -n $target_namespace
 k get ingresses --all-namespaces
 k get ing petclinic -n $target_namespace -o json
