@@ -78,12 +78,33 @@ az network application-gateway create --name $appgw_name \
                                       # [--identity]
                                       # --vnet-name $appgw_subnet_name 
 
+```
 
-# 
+```sh
+# TODO get an IP from AKS internal Ingress Controller
 az network application-gateway address-pool update \
- --servers <EXTERNAL_IP> \ # TODO get an IP from AKS
+ --servers $ing_ctl_ip \
  --gateway-name $appgw_name \
  -g $rg_name \
  -n appGatewayBackendPool
 
+# update DNS: add a record set pointing to $ing_ctl_ip
+az network dns zone list -g $rg_name
+az network dns record-set a add-record -g $rg_name -z $custom_dns -n appgw -a $appgw_public_ip_address --ttl 300 # (300s = 5 minutes)
+az network dns record-set list -g $rg_name -z $custom_dns
+```
+
+create an Internal Ingress Controller, see [./build_java_app.md#create-internal-ingress](./build_java_app.md#create-internal-ingress)
+
+```sh
+# Test with an internal Ingress  
+export ING_HOST="appgw."$custom_dns
+echo "INGRESS HOST " $ING_HOST
+envsubst < java-app/petclinic-internal-ingress.yaml > deploy/petclinic-internal-ingress.yaml 
+cat deploy/petclinic-internal-ingress.yaml 
+k apply -f deploy/petclinic-internal-ingress.yaml -n $target_namespace
+k get ingresses --all-namespaces
+k get ing internal-petclinic -n $target_namespace -o json
+k describe ingress internal-petclinic -n $target_namespace
+k get events -n $target_namespace | grep -i "Error"
 ```

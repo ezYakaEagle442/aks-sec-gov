@@ -1,0 +1,25 @@
+# https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#ingress-v1beta1-networking-k8s-io
+apiVersion: networking.k8s.io/v1beta1 # extensions/v1beta1
+kind: Ingress
+metadata:
+  name: internal-petclinic
+  #namespace: staging
+  annotations:
+    kubernetes.io/ingress.class: nginx  
+spec:
+  rules:
+  - host: $ING_HOST
+    http:
+      paths:
+      - backend:
+          serviceName: petclinic-internal-service
+          servicePort: 80
+        path: /
+      - backend:
+          serviceName: petclinic-internal-service
+          servicePort: 80
+        path: /manage/health
+      - backend:
+          serviceName: petclinic-internal-service
+          servicePort: 80
+        path: /manage/info

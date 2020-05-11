@@ -377,7 +377,7 @@ helm install internal-ingress stable/nginx-ingress \
 helm ls --namespace ingress
 #k describe svc internal-ingress-nginx-ingress-default-backend -n ingress
 #k describe svc internal-ingress-nginx-ingress-controller -n ingress
-k get svc -n ingress
+k get services -n ingress -o wide internal-ingress-nginx-ingress-controller -w
 
 for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
 do
@@ -386,6 +386,7 @@ done
 
 k get events -n ingress | grep -i "Error"
 
+ing_ctl_ip=$(k get svc -n ingress internal-ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
 
 # helm uninstall internal-ingress -n ingress
 ```
