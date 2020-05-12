@@ -4,6 +4,9 @@ See :
 - [https://github.com/Azure/aad-pod-identity](https://github.com/Azure/aad-pod-identity)
 - [https://medium.com/microsoftazure/pod-identity-5bc0ffb7ebe7](https://medium.com/microsoftazure/pod-identity-5bc0ffb7ebe7)
 
+By default aad-pod-identity creates the AzureAssignedIdentity in default namespace. 
+However you can run aad-pod-identity in [force namespaced mode](https://github.com/Azure/aad-pod-identity/blob/master/docs/readmes/README.namespaced.md). 
+When run in force namespaced mode, the AzureAssignedIdentity will be created in the same namespace as the AzureIdentity, AzureIdentityBinding` and pods.
 
 ## Pre-requisites
 
@@ -60,6 +63,8 @@ apiVersion: "aadpodidentity.k8s.io/v1"
 kind: AzureIdentity
 metadata:
   name: $IDENTITY_NAME
+  annotations:
+    aadpodidentity.k8s.io/Behavior: namespaced  
 spec:
   type: 0
   resourceID: $IDENTITY_RESOURCE_ID
