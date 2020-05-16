@@ -85,6 +85,13 @@ choco install azure-cli --Yes --confirm --accept-license --version 2.1.0
 
 sudo apt-get install -y apt-transport-https
 
+# https://github.com/Azure/azure-cli/issues/11499
+# https://github.com/Azure/azure-cli/issues/6383
+# https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest
+curl -sL https://packages.microsoft.com/keys/microsoft.asc |
+    gpg --dearmor |
+    sudo tee /etc/apt/trusted.gpg.d/microsoft.asc.gpg > /dev/null
+
 # https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest
 # ex: Windows Subsystem for Linux (WSL), git bash for windows, Putty
 
@@ -101,7 +108,7 @@ sudo apt-get update
 apt search azure-cli 
 apt-cache search azure-cli 
 apt list azure-cli -a
-sudo apt-get install azure-cli # azure-cli=2.1.0-1~bionic
+sudo apt-get install azure-cli # azure-cli=2.5.0-1~bionic
 
 # AKS managed-identity requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity
 # Azure CLi v2.3.0 released on 31/03/2020, see https://github.com/Azure/azure-cli/issues/12594 
@@ -222,4 +229,10 @@ k9s -n mycoolns
 # Start K9s in an existing KubeConfig context
 k9s --context coolCtx
 
+```
+
+# K8SLens
+
+```sh
+# https://k8slens.dev/
 ```
