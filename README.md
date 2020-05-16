@@ -23,10 +23,10 @@ See also :
 1. Setup [pre-requisites](setup-prereq-rg-spn.md) ~10 minutes
    1. Create RG
    1. Create Storage
-   1. Create Service Principal
-1. Setup [Network](setup-network.md) ~ 2h
-   1. Setup [Azure Firewall](setup-azure-firewall.md) ~30 minutes
-   1. Setup [egress traffic lockdown](setup-egress-lockdown.md) ~30 minutes
+   1. Setup [Network](setup-network.md) ~ 2h
+      1. Setup [Azure Firewall](setup-azure-firewall.md) ~30 minutes
+      1. Setup [egress traffic lockdown](setup-egress-lockdown.md) ~30 minutes
+   1. Create [SSH Keys](setup-prereq-rg-spn.md#Generates-your-ssh-keys)
 1. Setup AKS
    1. Setup [AAD Integration](setup-AAD.md) ~30 minutes
    1. Setup [ACR with Private-Link](setup-acr.md) ~30 minutes

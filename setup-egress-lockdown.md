@@ -74,6 +74,18 @@ az network firewall application-rule create -n "fw-app-rules-aks-api" -f $firewa
 # The private cluster FQDN format has changed from *guid.azmk8s.io to *guid.privatelink.azmk8s.io
 
 ```
+## Update firewall rule for key Vault
+
+See [https://docs.microsoft.com/en-us/azure/key-vault/general/access-behind-firewall](https://docs.microsoft.com/en-us/azure/key-vault/general/access-behind-firewall)
+```sh
+# TODO
+login.microsoftonline.com:443
+management.azure.com:443
+graph.microsoft.com:443
+$vault_name.vault.azure.net:443
+
+```
+
 
 ## Add Azure Arc requirements: https://github.com/Azure/azure-arc-kubernetes-preview/blob/master/docs/connect-a-cluster.md
 

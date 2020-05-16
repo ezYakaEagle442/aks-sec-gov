@@ -44,7 +44,7 @@ kubectl get nodes
 
 ## Create spot instance node pools.
 
-To know before you start:
+To know before you start with [spot node pools](https://docs.microsoft.com/en-us/azure/aks/spot-node-pool):
 
 - Spot pools cannot be primary pool
 - Spot needs to be VMSS based

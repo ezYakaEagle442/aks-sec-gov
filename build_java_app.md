@@ -377,7 +377,7 @@ helm install internal-ingress stable/nginx-ingress \
 helm ls --namespace ingress
 #k describe svc internal-ingress-nginx-ingress-default-backend -n ingress
 #k describe svc internal-ingress-nginx-ingress-controller -n ingress
-k get services -n ingress -o wide internal-ingress-nginx-ingress-controller -w
+k get services internal-ingress-nginx-ingress-controller -n ingress -o wide -w
 
 for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
 do
@@ -504,6 +504,11 @@ echo "Name Server" $ns_server
 
 # /!\ On your windows station , flush DNS ... : ipconfig /flushdns
 # Mac: sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder; say cache flushed
+# on WSL : sudo apt-get install dbus
+# /etc/init.d/dbus start
+# Ubuntu : sudo /etc/init.d/dns-clean restart or sudo systemd-resolve --flush-caches
+# ps ax | grep dnsmasq
+# sudo /etc/init.d/dnsmasq restart
 nslookup $app_dns_zone $ns_server
 
 dns_zone_id=$(az network dns zone show --name $app_dns_zone -g $rg_name --query id --output tsv)

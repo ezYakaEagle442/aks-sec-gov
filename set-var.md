@@ -28,8 +28,8 @@ echo "App DNS zone " $app_dns_zone
 custom_dns="akshandsonlabs.com"
 echo "Custom DNS is : " $custom_dns
 
-# target : version 1.15.10. Note: should be usually orchestrators[-1]
-version=$(az aks get-versions -l $location --query 'orchestrators[-3].orchestratorVersion' -o tsv) 
+# target : version 1.16.7 to leverage secret store CSI driver Note: should be usually orchestrators[-1]
+version=$(az aks get-versions -l $location --query 'orchestrators[-2].orchestratorVersion' -o tsv) 
 echo "version is :" $version 
 
 vault_secret="NoSugarNoStar" 
@@ -168,6 +168,9 @@ echo "VNet Peering Name Bastion VNet To KV :" $vnet_peering_name_bastion_kv
 
 vnet_peering_name_bastion_acr="vnetp-BastionVNet-To-ACR-${appName}-VNet"
 echo "VNet Peering Name Bastion VNet To ACR :" $vnet_peering_name_bastion_acr
+
+appgw_vnet_peering_name="vnetp-AppGwVNet-To-AKS-${appName}-VNet"
+echo "VNet Peering Name App. Gateway VNet To AKS :" $appgw_vnet_peering_name
 
 # https://docs.microsoft.com/en-us/cli/azure/network/bastion?view=azure-cli-latest#az-network-bastion-create
 # must have a subnet called AzureBastionSubnet

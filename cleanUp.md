@@ -15,13 +15,18 @@ az aks nodepool delete --name $poc_node_pool_name --cluster-name $cluster_name -
 
 az aks delete --name $cluster_name -g $rg_name -y
 
-
 # ACR
 az acr delete -g $rg_acr_name --name $acr_registry_name -y
 az network vnet peering delete -n $acr_vnet_peering_name --vnet-name $vnet_name -g $rg_name --subscription $subId
-az network vnet peering delete -n $acr_vnet_peering_name --vnet-name $acr_vnet_name -g $rg_acr_name --subscription $subId
+az network vnet peering delete -n $acr_vnet_peering_name --vnet-name $acr_vnet_name -g $rg_name --subscription $subId
 
 # KV
+
+az network private-endpoint delete --name $kv_private_endpoint_name -g $rg_name
+az network lb delete --name $ilb_name -g $rg_name
+az network lb probe delete --name ilbHealthProbe --lb-name $ilb_name -g $rg_name
+az network private-link-service delete --name $kv_prv_lnk_svc -g $rg_name
+
 az keyvault delete --name $vault_name --resource-group $rg_name
 az network vnet peering delete -n $kv_vnet_peering_name --vnet-name $vnet_name -g $rg_name --subscription $subId
 az network vnet peering delete -n $kv_vnet_peering_name --vnet-name $kv_vnet_name -g $rg_kv_name --subscription $subId
@@ -35,14 +40,14 @@ az network vnet subnet delete --name $appgw_subnet_id --vnet-name $vnet_appgw --
 az network vnet delete --name $vnet_name --resource-group $rg_name 
 az network vnet delete --name $vnet_appgw --resource-group $rg_name
 
-az network vnet subnet delete --name acr_subnet_name --vnet-name $acr_vnet_name --resource-group $rg_acr_name 
-az network vnet delete --name  $acr_vnet_name --resource-group $rg_acr_name 
-az network private-dns link vnet delete --name $acr_private_dns_link_name -g $rg_acr_name --zone-name "privatelink.azurecr.io" -y
-az network private-endpoint delete --name $acr_private_endpoint_name -g $rg_acr_name # --ids $acr_subnet_id 
+az network vnet subnet delete --name acr_subnet_name --vnet-name $acr_vnet_name --resource-group $rg_name 
+az network vnet delete --name  $acr_vnet_name --resource-group $rg_name 
+az network private-dns link vnet delete --name $acr_private_dns_link_name -g $rg_name --zone-name "privatelink.azurecr.io" -y
+az network private-endpoint delete --name $acr_private_endpoint_name -g $rg_name # --ids $acr_subnet_id 
 
-az network private-dns record-set a delete --name $acr_registry_name --zone-name privatelink.azurecr.io -g $rg_acr_name -y
-az network private-dns record-set a delete --name ${acr_registry_name}.${location}.data --zone-name privatelink.azurecr.io -g $rg_acr_name -y
-az network private-dns zone delete -g $rg_acr_name --name "privatelink.azurecr.io" -y
+az network private-dns record-set a delete --name $acr_registry_name --zone-name privatelink.azurecr.io -g $rg_name -y
+az network private-dns record-set a delete --name ${acr_registry_name}.${location}.data --zone-name privatelink.azurecr.io -g $rg_name -y
+az network private-dns zone delete -g $rg_name --name "privatelink.azurecr.io" -y
 
 
 # Bastion
@@ -73,6 +78,9 @@ az network public-ip delete --name $appgw_IP --subscription $subId -g $rg_name
 
 az network application-gateway delete -g $rg_name -n $appgw_agic_name
 az network public-ip delete --name $appgw_agic_IP --subscription $subId -g $rg_name
+
+az network vnet peering delete -n $appgw_vnet_peering_name  --vnet-name $vnet_name -g $rg_name --subscription $subId
+az network vnet peering delete -n $appgw_vnet_peering_name  --vnet-name $vnet_appgw  -g $rg_name --subscription $subId
 
 # Firewall
 

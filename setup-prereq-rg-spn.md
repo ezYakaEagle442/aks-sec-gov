@@ -21,6 +21,8 @@ az storage account create --name $storage_name --kind StorageV2 --sku Standard_L
 
 # Create Service Principal
 
+You do not need to create SPN when enabling managed-identity on AKS cluster.
+
 Read [https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal](https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal)
 
 ```sh
@@ -54,6 +56,8 @@ az ad sp show --id $sp_id
 <span style="color:red">/!\ IMPORTANT </span> :  check & save your ssh_passphrase !!!
 
 Generate & save nodes [SSH keys](https://docs.microsoft.com/en-us/azure/aks/ssh) to Azure Key-Vault is a [Best-practice](https://github.com/Azure/k8s-best-practices/blob/master/Security_securing_a_cluster.md#securing-host-access)
+
+If you want to save your keys to keyVault, [KV must be created first](setup-kv.md)
 
 ```sh
 ssh-keygen -t rsa -b 4096 -N $ssh_passphrase -f ~/.ssh/$ssh_key -C "youremail@groland.grd"

@@ -66,7 +66,7 @@ az network application-gateway create --name $appgw_name \
                                       --http-settings-protocol Https \
                                       --http2 Enabled \
                                       --location $location \
-                                      --private-ip-address 172.42.1.42 \
+                                      --private-ip-address 172.44.0.42 \
                                       --public-ip-address $appgw_IP \
                                       --routing-rule-type Basic \
                                       --sku WAF_v2 \
@@ -94,7 +94,22 @@ az network dns record-set a add-record -g $rg_name -z $custom_dns -n appgw -a $a
 az network dns record-set list -g $rg_name -z $custom_dns
 ```
 
-create an Internal Ingress Controller, see [./build_java_app.md#create-internal-ingress](./build_java_app.md#create-internal-ingress)
+create an Internal Ingress Controller, see [./build_java_app.md#create-petclinic-internal-ingress](./build_java_app.md#create-petclinic-internal-ingress)
+
+```sh
+k create namespace internal-ingress
+
+helm install internal-ingress stable/nginx-ingress \
+    --namespace internal-ingress \
+    -f internal-ingress.yaml \
+    --set controller.replicaCount=2 \
+    --set controller.nodeSelector."beta\.kubernetes\.io/os"=linux \
+    --set defaultBackend.nodeSelector."beta\.kubernetes\.io/os"=linux
+
+helm ls --namespace internal-ingress
+k get services -n internal-ingress -o wide internal-ingress-nginx-ingress-controller -w
+ing_ctl_ip=$(k get svc -n internal-ingress internal-ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
+```
 
 ```sh
 # Test with an internal Ingress  
@@ -107,4 +122,13 @@ k get ingresses --all-namespaces
 k get ing internal-petclinic -n $target_namespace -o json
 k describe ingress internal-petclinic -n $target_namespace
 k get events -n $target_namespace | grep -i "Error"
+
+# Test inside AKS
+k run -it --rm aks-ingress-test --image=alpine --restart=Never --namespace internal-ingress
+apk update && apk add curl
+curl -L http://172.44.0.42
+exit
+
+#test from b browser at http://appgw.akshandsonlabs.com/
+
 ```

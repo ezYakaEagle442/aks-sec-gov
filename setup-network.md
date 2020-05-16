@@ -34,6 +34,9 @@ echo "Subnet Id :" $subnet_id
 new_node_pool_subnet_id=$(az network vnet subnet show -g $rg_name --vnet-name $vnet_name --name $new_node_pool_subnet_name --query id -o tsv)
 echo "New Node-Pool Subnet Id :" $new_node_pool_subnet_id	
 
+# https://docs.microsoft.com/en-us/azure/private-link/create-private-link-service-cli#disable-private-link-service-network-policies-on-subnet
+az network vnet subnet update --name $subnet_name --vnet-name $vnet_name --disable-private-link-service-network-policies true -g $rg_name
+
 # /!\ **IMPORTANT** : https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni?view=azure-cli-latest#prerequisites
 # https://docs.microsoft.com/en-us/azure/aks/configure-kubenet?view=azure-cli-latest#create-a-service-principal-and-assign-permissions
 
@@ -50,6 +53,11 @@ az network vnet subnet create --name $agic_subnet_name --address-prefixes 172.16
 agic_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name $vnet_name --name $agic_subnet_name --query id -o tsv)
 echo "AGIC Subnet Id :" $agic_subnet_id	
 
+# This is the subnet that will be used for Kubernetes Services that are exposed via an Internal Load Balancer (ILB). This mean the ILB internal IP will be from this subnet address space. By doing it this way we do not take away from the existing IP Address space in the AKS subnet that is used for Nodes and Pods.
+az network vnet subnet create --name $ilb_subnet_name --address-prefixes 172.16.42.0/24 --vnet-name $vnet_name -g $rg_name 
+ilb_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name  $vnet_name --name $ilb_subnet_name --query id -o tsv)
+echo "Internal Load BalancerLB Subnet Id :" $ilb_subnet_id	
+
 # Firewall
 az group create --name $rg_fw_name --location $location
 
@@ -64,8 +72,8 @@ fw_subnet_id=$(az network vnet subnet show --resource-group $rg_fw_name --vnet-n
 echo "Firewall Subnet Id :" $fw_subnet_id	
 
 # App Gateway(not AGIC) runs in its own VNet
-az network vnet create --name $vnet_appgw -g $rg_name --address-prefixes 172.42.0.0/16 --location $location
-az network vnet subnet create --name $appgw_subnet_name --address-prefixes 172.42.1.0/24 --vnet-name $vnet_appgw -g $rg_name 
+az network vnet create --name $vnet_appgw -g $rg_name --address-prefixes 172.44.0.0/24 --location $location
+az network vnet subnet create --name $appgw_subnet_name --address-prefixes 172.44.0.0/27 --vnet-name $vnet_appgw -g $rg_name 
 
 appgw_vnet_id=$(az network vnet show --resource-group $rg_name --name $vnet_appgw --query id -o tsv)
 echo "App Gateway VNet Id :" $appgw_vnet_id	
@@ -73,12 +81,6 @@ echo "App Gateway VNet Id :" $appgw_vnet_id
 appgw_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name $vnet_appgw --name $appgw_subnet_name --query id -o tsv)
 echo "App Gateway Subnet Id :" $appgw_subnet_id	
 
-
-
-# This is the subnet that will be used for Kubernetes Services that are exposed via an Internal Load Balancer (ILB). This mean the ILB internal IP will be from this subnet address space. By doing it this way we do not take away from the existing IP Address space in the AKS subnet that is used for Nodes and Pods.
-az network vnet subnet create --name $ilb_subnet_name --address-prefixes 172.16.42.0/24 --vnet-name $vnet_name -g $rg_name 
-ilb_subnet_id=$(az network vnet subnet show --resource-group $rg_name --vnet-name  $vnet_name --name $ilb_subnet_name --query id -o tsv)
-echo "Internal Load BalancerLB Subnet Id :" $ilb_subnet_id	
 
 # ACR - PrivateLink
 # az group create --name $rg_acr_name --location $location
@@ -98,7 +100,8 @@ az network vnet subnet update --name $acr_subnet_name --disable-private-endpoint
 az network vnet create --name $kv_vnet_name -g $rg_name --address-prefixes 172.12.0.0/24 --location $location
 az network vnet subnet create --name $kv_subnet_name --address-prefixes 172.12.0.0/27 --vnet-name $kv_vnet_name -g $rg_name 
 
-az network vnet subnet update --name $kv_subnet_name -g $rg_name --vnet-name $kv_vnet_name --disable-private-endpoint-network-policies true
+# az network vnet subnet update --name $kv_subnet_name -g $rg_name --vnet-name $kv_vnet_name --disable-private-endpoint-network-policies true
+az network vnet subnet update --name $kv_subnet_name --vnet-name $kv_vnet_name --disable-private-link-service-network-policies true -g $rg_name
 
 kv_vnet_id=$(az network vnet show --name $kv_vnet_name -g $rg_name --query id -o tsv)
 echo "KeyVault VNet Id :" $kv_vnet_id	
@@ -436,3 +439,25 @@ az network vnet peering show -g $rg_name -n $vnet_peering_name_bastion_acr --vne
 az network vnet peering show -g $rg_bastion_name -n $vnet_peering_name_bastion_acr --vnet-name $vnet_bastion_name --query peeringState
 
 ```
+
+## Setup VNet peering : App. Gateway ==> AKS
+```sh
+az network vnet peering create -n $appgw_vnet_peering_name \
+    -g $rg_name \
+    --subscription $subId \
+    --allow-vnet-access \
+    --vnet-name $vnet_name \
+    --remote-vnet $appgw_vnet_id
+
+az network vnet peering show -g $rg_name -n $appgw_vnet_peering_name --vnet-name $vnet_name --query peeringState
+
+az network vnet peering create -n $appgw_vnet_peering_name \
+    -g $rg_name \
+    --subscription $subId \
+    --allow-vnet-access \
+    --vnet-name $vnet_appgw\
+    --remote-vnet $vnet_id
+
+az network vnet peering list -g $rg_name --vnet-name $vnet_name  --subscription $subId
+az network vnet peering show -g $rg_name -n $appgw_vnet_peering_name --vnet-name $vnet_name --query peeringState
+az network vnet peering show -g $rg_name -n $appgw_vnet_peering_name --vnet-name $vnet_appgw --query peeringState
