@@ -5,7 +5,7 @@ See [https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active
 ***If you are not tenant-admin, you need to [create your own tenant]**(https://docs.microsoft.com/en-us/azure/active-directory/fundamentals/active-directory-access-create-new-tenant)
 
 See also 
-- new feature (not yet GA) [Integrate Azure AD v2.0 in AKS](https://docs.microsoft.com/en-us/azure/aks/azure-ad-v2)
+- new feature (not yet GA) [Integrate Azure AD v2.0 in AKS](https://docs.microsoft.com/en-us/azure/aks/managed-aad)
 - [https://github.com/Azure/AKS/issues/1489](https://github.com/Azure/AKS/issues/1489 )
 - [https://docs.microsoft.com/en-us/azure/aks/concepts-identity#azure-active-directory-integration]
 - [https://docs.microsoft.com/en-us/azure/aks/azure-ad-integration-cli](https://docs.microsoft.com/en-us/azure/aks/azure-ad-integration-cli)
@@ -20,7 +20,7 @@ Azure AD integration with AKS v2 is designed to simplify the Azure AD integratio
 (Currently in Preview)
 For AADv2 you [do not need to be AAD tenant admin](https://github.com/MicrosoftDocs/azure-docs/issues/53378).
 
-[Pre-requistes](https://docs.microsoft.com/en-us/azure/aks/azure-ad-v2#before-you-begin) :
+[Pre-requistes](https://docs.microsoft.com/en-us/azure/aks/managed-aad#before-you-begin) :
 - The Azure CLI, version 2.2.0 or later
 - The aks-preview 0.4.38 extension
 - Kubectl with a minimum version of **1.18** beta
