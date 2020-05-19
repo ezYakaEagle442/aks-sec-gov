@@ -376,6 +376,14 @@ az vmss run-command invoke -g $managed_rg  \
 nc -v -u -z -w 3 ntp.ubuntu.com 123
 ```
 
+## Attach ACR
+
+See [./setup-acr#createroleassignment](./setup-acr#createroleassignment)
+
+```sh
+# Once the acrpull role is assigned to the AKS idenity , now finally attach ACR to AKS
+az aks update -n $cluster_name -g $rg_name --attach-acr $acr_registry_id
+```
 
 ## Connect to the Cluster
 

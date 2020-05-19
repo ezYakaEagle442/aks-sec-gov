@@ -96,6 +96,10 @@ az keyvault network-rule add --name $vault_name -g $rg_name --subnet $subnet_id
 az network vnet subnet update -g $rg_name --vnet-name $vnet_name --name $new_node_pool_subnet_name --service-endpoints "Microsoft.KeyVault"
 az keyvault network-rule add --name $vault_name -g $rg_name --subnet $new_node_pool_subnet_id
 
+# Test from bastion
+az network vnet subnet update -g $rg_bastion_name --vnet-name $vnet_bastion_name --name $subnet_bastion_name --service-endpoints "Microsoft.KeyVault"
+az keyvault network-rule add --name $vault_name -g $rg_name --subnet $bastion_subnet_id
+
 az keyvault network-rule list --name $vault_name -g $rg_name
 ```
 
@@ -111,7 +115,7 @@ nslookup $vault_name.privatelink.vaultcore.azure.net
 ```sh
 # https://docs.microsoft.com/en-us/cli/azure/keyvault/secret?view=azure-cli-latest#az-keyvault-secret-set
 
-sudo apt-key adv --keyserver packages.microsoft.com --recv-keys EB3E94ADBE1229CF
+# sudo apt-key adv --keyserver packages.microsoft.com --recv-keys EB3E94ADBE1229CF
 
 
 # Test ...

@@ -33,17 +33,12 @@ az monitor log-analytics workspace create --workspace-name $acr_analytics_worksp
 acr_analytics_workspace_id=$(az monitor log-analytics workspace show --workspace-name $acr_analytics_workspace -g $rg_name --query "id" --output tsv)
 echo $acr_analytics_workspace_id
 
-# Use Premium sku to enable Private Link
+# Use Premium sku to enable Private Link & ACR Firewall
 az acr create --name $acr_registry_name --sku Premium --location $location -g $rg_name --workspace $acr_analytics_workspace_id 
 
 # Get the ACR registry resource id
 acr_registry_id=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "id" --output tsv)
 echo "ACR registry ID :" $acr_registry_id
-
-# https://aka.ms/acr/installaad/bash
-
-# Create role assignment
-az role assignment create --assignee $sp_id --role acrpull --scope $acr_registry_id
 
 # run sudo on WSL, otherwise you will get the error below : An error occurred: DOCKER_COMMAND_ERROR
 #Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running? Please refer to https://aka.ms/acr/errors#docker_command_error for more information.
@@ -53,6 +48,29 @@ az role assignment create --assignee $sp_id --role acrpull --scope $acr_registry
 # sudo service docker start
 az acr repository list --name $acr_registry_name
 az acr check-health --yes -n $acr_registry_name 
+
+# https://aka.ms/acr/installaad/bash
+```
+
+# Create role assignment
+
+See :
+- [https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication-managed-identity]
+- [https://github.com/MicrosoftDocs/azure-docs/issues/51672](https://github.com/MicrosoftDocs/azure-docs/issues/51672#issuecomment-630652951)
+- [https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration](https://docs.microsoft.com/en-us/azure/aks/cluster-container-registry-integration)
+
+```sh
+# with SP when Managed Identities is not set during AKS cluster creation : az role assignment create --assignee $sp_id --role acrpull --scope $acr_registry_id
+#  when Managed Identities is set during AKS cluster creation :
+
+CLIENT_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "servicePrincipalProfile.clientId" --output tsv)
+echo "AKS CLIENT_ID:" $CLIENT_ID 
+
+aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
+echo "AKS Cluster Identity Client ID " $aks_client_id
+az identity show --ids $PoolIdentityResourceID
+
+az role assignment create --assignee $aks_client_id --role acrpull --scope $acr_registry_id
 
 ```
 
