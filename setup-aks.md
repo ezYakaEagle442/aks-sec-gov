@@ -82,7 +82,6 @@ To learn more about UDR, see [https://docs.microsoft.com/en-us/azure/virtual-net
 # small & cheap VM size : Basic_A1 or Standard_B1s or Standard_F2s_v2
 az aks create --name $cluster_name \
     --resource-group $rg_name \
-    --attach-acr $acr_registry_name \
     --aks-custom-headers CustomizedUbuntu=aks-ubuntu-1804 \
     --zones 1 2 3 \
     --enable-cluster-autoscaler \
@@ -111,6 +110,7 @@ az aks create --name $cluster_name \
     --enable-managed-identity \
     #--service-principal $sp_id \ ==> you do not need it when enabling managed-identity
     #--client-secret $sp_password \ ==> you do not need it when enabling managed-identity
+    # --attach-acr $acr_registry_name \
     # requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity , and also  0.4.38 of the preview cli az extension update --name aks-preview
     # --no-wait ==> When --attach-acr and --enable-managed-identity are both specified, --no-wait is not allowed, please wait until the whole operation succeeds.
     --enable-aad --aad-admin-group-object-ids $AKSADM_GRP_ID --aad-tenant-id $tenantId # requires Kubectl client 1.18.x
@@ -135,9 +135,8 @@ az aks create --name $cluster_name \
 
 <span style="color:red">/!\ IMPORTANT </span> : do not wait for the end of the cluster creation and continue to ne next sections below 
 
-# Update firewall rules
 
-Go to the portal and watch for the API server endpoint, get its URL
+### Get AKS Credentials
 
 Apply [KubeCtl alias](./tools#kube-tools)
 
@@ -153,12 +152,16 @@ az aks show -n $cluster_name -g $rg_name
 aks_api_server_url=$(az aks show -n $cluster_name -g $rg_name --query 'privateFqdn' -o tsv)
 echo "AKS API server URL: " $aks_api_server_url
 
-
 ```
+### Update firewall rules
+
+Go to the portal and watch for the API server endpoint, get its URL
+Go to the [Update firewall rules section](./setup-egress-lockdown.md#update-firewall-rule-after-aks-cluster-creation)
+
 
 <span style="color:red">/!\ IMPORTANT </span> : Follow [./setup-egress-lockdown.md#update-firewall-rule-after-aks-cluster-creation](./setup-egress-lockdown.md#update-firewall-rule-after-aks-cluster-creation)
 
-# Vnet peering
+### Vnet-Link
 
 ```sh
 # managed_rg="MC_$rg_name"_"$cluster_name""_""$location"
@@ -180,19 +183,19 @@ echo "API server URL length " $aks_api_server_url_length
 
 prv_lnk_url_pattern_length=$(echo -n ".privatelink.${location}.azmk8s.io" | wc -c)
 echo "Private link URL pattern length " $prv_lnk_url_pattern_length
-# echo ${aks_api_server_url: - $prv_lnk_url_pattern_length} 
-
 
 url_begin_length=$(echo $(($aks_api_server_url_length - $prv_lnk_url_pattern_length)))
 aks_api_server_url_begin="${aks_api_server_url:0:$url_begin_length}"
 echo "AKS URL name begins with " $aks_api_server_url_begin
-
 
 index=$(echo `expr index "$aks_api_server_url_begin" .`)
 echo "Index " $index
 
 prv_lnk_zone_guid="${aks_api_server_url_begin:$index:$url_begin_length}"
 echo "Private link zone GUID " $prv_lnk_zone_guid
+
+# Much simple and work with Mac : 
+prv_lnk_zone_guid=$(echo $aks_api_server_url | cut -d. -f2)
 
 az network private-dns link vnet list -g $managed_rg --zone-name "$prv_lnk_zone_guid.privatelink.${location}.azmk8s.io"
 
@@ -378,14 +381,20 @@ nc -v -u -z -w 3 ntp.ubuntu.com 123
 
 ## Attach ACR
 
-See [./setup-acr#createroleassignment](./setup-acr#createroleassignment)
+See [./setup-acr#create-role-assignment](./setup-acr#create-role-assignment)
 
 ```sh
 # Once the acrpull role is assigned to the AKS idenity , now finally attach ACR to AKS
 az aks update -n $cluster_name -g $rg_name --attach-acr $acr_registry_id
+# az aks show -g $rg_name -n $cluster_name
+
 ```
 
 ## Connect to the Cluster
+
+Connect to your bastion / JumpOff, then :
+- install the [tools](tools.md)
+- reinit your variables
 
 ```sh
 
@@ -394,9 +403,10 @@ az aks get-credentials --resource-group $rg_name --name $cluster_name --admin
 kubectl cluster-info
 #kubectl config view
 
+# below is N/A with ManagedIdentities
 # Get the id of the service principal configured for AKS
-CLIENT_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "servicePrincipalProfile.clientId" --output tsv)
-echo "CLIENT_ID:" $CLIENT_ID 
+# CLIENT_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "servicePrincipalProfile.clientId" --output tsv)
+# echo "CLIENT_ID:" $CLIENT_ID 
 
 
 ```
