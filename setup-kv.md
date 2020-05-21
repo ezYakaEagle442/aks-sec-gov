@@ -42,16 +42,25 @@ echo "KeyVault ID :" $kv_id
 ```sh
 az keyvault private-link-resource list --vault-name $vault_name -g $rg_name
 az network private-dns zone create --name privatelink.vaultcore.azure.net -g $rg_name 
-az network private-dns link vnet create --name $kv_private_dns_link_name --virtual-network $kv_vnet_name --zone-name privatelink.vaultcore.azure.net --registration-enabled true -g $rg_name
+
+# AKS
+az network private-dns link vnet create --name $kv_private_dns_link_name --virtual-network $vnet_name --zone-name privatelink.vaultcore.azure.net --registration-enabled false -g $rg_name
 
 private_dns_link_id=$(az network private-dns link vnet show --name $kv_private_dns_link_name --zone-name "privatelink.vaultcore.azure.net" -g $rg_name --query "id" --output tsv)
 echo "Private-Link DNS ID :" $private_dns_link_id
+
+# Bastion
+az network private-dns link vnet create --name $kv_bastion_private_dns_link_name --virtual-network $bastion_vnet_id --zone-name privatelink.vaultcore.azure.net --registration-enabled false -g $rg_name
+
+bastion_private_dns_link_id=$(az network private-dns link vnet show --name $kv_bastion_private_dns_link_name --zone-name "privatelink.vaultcore.azure.net" -g $rg_name --query "id" --output tsv)
+echo "Private-Link DNS ID :" $bastion_private_dns_link_id
 
 nslookup $vault_name.vault.azure.net
 
 ```
 
-## Create a Private Endpoint (Manually Request Approval)
+
+## Create a Private Endpoint for AKS
 
 ```sh
 
@@ -75,6 +84,17 @@ kv_network_interface_private_ip=$(az resource show --ids $network_interface_id \
 echo "KeyVault Network Interface private IP :" $kv_network_interface_private_ip
 
 az keyvault private-link-resource list --vault-name $vault_name -g $rg_name
+
+```
+
+## Update DNS records
+
+```sh
+
+# https://docs.microsoft.com/en-us/azure/dns/private-dns-getstarted-cli#create-an-additional-dns-record
+az network private-dns zone list -g $rg_name
+az network private-dns record-set a add-record -g $rg_name -z "privatelink.vaultcore.azure.net" -n $vault_name -a $kv_network_interface_private_ip
+az network private-dns record-set list -g $rg_name -z "privatelink.vaultcore.azure.net"
 
 # From home/public network, you wil get a public IP. If inside a vnet with private zone, then nslookup will resolve to the private ip.
 nslookup $vault_name.vault.azure.net

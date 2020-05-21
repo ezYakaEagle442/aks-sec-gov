@@ -252,6 +252,9 @@ echo "AKS private-dns link Name :" $aks_private_dns_link_name
 kv_private_dns_link_name="prv-lnk-kv-${appName,,}"
 echo "KeyVault private-dns link Name :" $kv_private_dns_link_name
 
+kv_bastion_private_dns_link_name="prv-lnk-kv-bastion-${appName,,}"
+echo "KeyVault private-dns link Name for Bastion :" $kv_bastion_private_dns_link_name
+
 kv_private_endpoint_name="prv-ep-kv-${appName,,}"
 echo "KeyVault private-endpoint Name :" $kv_private_endpoint_name
 
@@ -269,6 +272,9 @@ echo "ACR registry Name :" $acr_registry_name
 
 acr_private_dns_link_name="prv-lnk-acr-${appName,,}"
 echo "ACR private-dns link Name :" $acr_private_dns_link_name
+
+acr_bastion_private_dns_link_name="prv-lnk-acr-bastion-${appName,,}"
+echo "ACR private-dns link Name for Bastion :" $acr_bastion_private_dns_link_name
 
 acr_private_endpoint_name="prv-ep-acr-${appName,,}"
 echo "ACR private-endpoint Name :" $acr_private_endpoint_name

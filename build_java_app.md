@@ -54,18 +54,6 @@ kubectl get secrets -n $target_namespace
 # https://aka.ms/acr/tasks/task-create-managed-identity
 # https://docs.microsoft.com/en-us/azure/container-registry/container-registry-tasks-authentication-key-vault
 
-# Store Docker Hub user name
-az keyvault secret set \
-  --name DockerUserName \
-  --value $sp_id \
-  --vault-name $vault_name
-
-# Store Docker Hub password
-az keyvault secret set \
-  --name DockerPassword \
-  --value $sp_password \
-  --vault-name $vault_name
-
 ACRIdentityName=${appName}ACRTasksIdentity
 echo "ACR Identity Name " :  $ACRIdentityName
 az identity create -g $rg_name --name $ACRIdentityName
@@ -121,14 +109,14 @@ ${registryname}.azurecr.io/spring-petclinic:{{.Run.ID}}</span>
 
 ```sh
 
-IMPORTANT TODO !!!! : https://github.com/Azure-Samples/java-on-aks/blob/master/.scripts/e2e-using-aks.sh 
-https://www.linux.org/docs/man1/envsubst.html
-<image>${CONTAINER_REGISTRY}.azurecr.io/${parent.artifactId}-${project.name}:${IMAGE_TAG}</image>
+# https://github.com/Azure-Samples/java-on-aks/blob/master/.scripts/e2e-using-aks.sh 
+# https://www.linux.org/docs/man1/envsubst.html
 
+mkdir deploy
 export CONTAINER_REGISTRY=$acr_registry_name
 export IMAGE_TAG=$build_id
 envsubst < petclinic-deployment.yaml > deploy/petclinic-deployment.yaml 
-
+cat deploy/petclinic-deployment.yaml
 #az acr run -r $acr_registry_name --cmd "${docker_server}/spring-petclinic:dd2" /dev/null
 kubectl apply -f deploy/petclinic-deployment.yaml -n $target_namespace
 kubectl get deployments -n $target_namespace
@@ -195,6 +183,7 @@ az role assignment create --assignee $sp_id --scope $aks_node_rg_id --role "Netw
 export DNS_LABEL="petclinic-svc"
 echo "DNS label" $DNS_LABEL
 envsubst < petclinic-service-lb.yaml > deploy/petclinic-service-lb.yaml
+cat deploy/petclinic-service-lb.yaml
 
 k apply -f deploy/petclinic-service-lb.yaml -n $target_namespace
 k get svc -n $target_namespace -o wide
@@ -203,7 +192,7 @@ k describe svc petclinic-lb-service -n $target_namespace
 # Standard load Balancer Use Case
 # Use the command below to retrieve the External-IP of the Service. Make sure to allow a couple of minutes for the Azure Load Balancer to assign a public IP.
 service_ip=$(k get service petclinic-lb-service -n $target_namespace -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
-public_ip_id=$(az network public-ip list --subscription $subId --resource-group $managed_rg --query "[?ipAddress!=null]|[?contains(ipAddress, '$service_ip')].[id]" --output tsv)
+public_ip_id=$(az network public-ip list -g $managed_rg --query "[?ipAddress!=null]|[?contains(ipAddress, '$service_ip')].[id]" --output tsv)
 echo $public_ip_id
 
 # All config properties ref: sur https://docs.spring.io/spring-boot/docs/current/reference/html/common-application-properties.html 
@@ -225,7 +214,7 @@ Then [configure DNS](#configure-DNS) ans test the URL access from a browser
 
 ### Restrict Restrict Access For LoadBalancer Service
 [https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service](https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service)
-TODO !
+
 ```sh
 
 # Get the IP
@@ -364,6 +353,11 @@ k get events -n $target_namespace | grep -i "Error"
 AKS_MI_SERVICE_PRINCIPAL_ID=$(az aks show --resource-group $rg_name --name $cluster_name --query "identity.principalId" -o tsv)
 az role assignment create --role "Contributor" --assignee $AKS_MI_SERVICE_PRINCIPAL_ID -g $rg_name
 
+aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
+echo "AKS Cluster Identity Client ID " $aks_client_id
+az role assignment create --role "Contributor" --assignee $aks_client_id -g $rg_name
+
+k create namespace ingress
 
 # https://docs.microsoft.com/en-us/azure/aks/ingress-internal-ip
 # Use Helm to deploy an NGINX ingress controller
@@ -379,12 +373,13 @@ helm ls --namespace ingress
 #k describe svc internal-ingress-nginx-ingress-controller -n ingress
 k get services internal-ingress-nginx-ingress-controller -n ingress -o wide -w
 
+k get events -n ingress | grep -i "Error"
+
 for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
 do
 	k describe svc $s -n ingress # | grep -i "Error"
 done
 
-k get events -n ingress | grep -i "Error"
 
 ing_ctl_ip=$(k get svc -n ingress internal-ingress-nginx-ingress-controller -o jsonpath="{.status.loadBalancer.ingress[*].ip}")
 
