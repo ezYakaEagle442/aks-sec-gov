@@ -1,10 +1,9 @@
 # Create Azure Container Registry
 
-ACR supports [Content-Trust](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-content-trust)
-
 See also :
 - [https://github.com/Azure/AKS/issues/688](https://github.com/Azure/AKS/issues/688)
 - [Notary v2 project - cross-industry initiative](https://github.com/notaryproject/requirements)
+- ACR supports [Content-Trust](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-content-trust)
 
 ## Create Azure Container Registry
 Note: 
@@ -68,20 +67,19 @@ echo "AKS CLIENT_ID:" $CLIENT_ID
 
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
-az identity show --ids $PoolIdentityResourceID
 
-az role assignment create --assignee $aks_client_id --role acrpull --scope $acr_registry_id
+# role assignment will be done through attach-acr in AKS
+# az role assignment create --assignee $aks_client_id --role acrpull --scope $acr_registry_id
 
 ```
 
 
 ## Setup Private-Link
 ```sh
-az network private-dns zone create \
-  --resource-group $rg_name\
-  --name "privatelink.azurecr.io"
+az network private-dns zone create --name "privatelink.azurecr.io" -g  $rg_name
 
 # Create an association link: https://docs.microsoft.com/en-us/azure/container-registry/container-registry-private-link#create-an-association-link
+# virtual-network is the consumer VNet, so it will be the AKS VNet $vnet_name
 az network private-dns link vnet create \
   --resource-group $rg_name \
   --zone-name "privatelink.azurecr.io" \
@@ -92,10 +90,17 @@ az network private-dns link vnet create \
 private_dns_link_id=$(az network private-dns link vnet show --name $acr_private_dns_link_name --zone-name "privatelink.azurecr.io" -g $rg_name --query "id" --output tsv)
 echo "Private-Link DNS ID :" $private_dns_link_id
 
+# do the same for the Bastion ...
+az network private-dns link vnet create --name $acr_bastion_private_dns_link_name --virtual-network $bastion_vnet_id --zone-name privatelink.azurecr.io --registration-enabled false -g $rg_name
+
+bastion_private_dns_link_id=$(az network private-dns link vnet show --name $acr_bastion_private_dns_link_name --zone-name "privatelink.azurecr.io" -g $rg_name --query "id" --output tsv)
+echo "Private-Link DNS ID :" $bastion_private_dns_link_id
+
+# The private-endpoint must be created in the Consumer VNet/Subnet, so it will be the AKS $subnet_id
 az network private-endpoint create \
     --name $acr_private_endpoint_name \
     --resource-group $rg_name \
-    --subnet $acr_subnet_id \
+    --subnet $subnet_id \
     --private-connection-resource-id $acr_registry_id \
     --group-ids registry \
     --location $location \
@@ -117,6 +122,7 @@ acr_data_endpoint_private_ip=$(az resource show --ids $network_interface_id \
   --query 'properties.ipConfigurations[0].properties.privateIPAddress' \
   --output tsv)
 echo "ACR Data Endpoint private IP :" $acr_data_endpoint_private_ip
+
 
 ```
 
@@ -152,9 +158,7 @@ echo "ACR private :" $acr_private
 nslookup $acr_registry_name.azurecr.io
 nslookup $acr_private
 
-
 ```
-
 
 ## Setup ACR Firewall : To be studied
 By default, an Azure container registry allows connections from hosts on any network. To limit access to a selected network, change the default action to deny access. Add a network rule to your registry that allows access from the VM's subnet.
@@ -170,7 +174,7 @@ Preview [Limitations](https://docs.microsoft.com/en-us/azure/container-registry/
 
 az acr update --name $acr_registry_name --default-action Deny
 az acr network-rule add --name $acr_registry_name --subnet $subnet_name
-az acr network-rule list--name $acr_registry_name
+az acr network-rule list --name $acr_registry_name
 
 # Verify access to the registry
 az acr login --name  $acr_registry_name 
