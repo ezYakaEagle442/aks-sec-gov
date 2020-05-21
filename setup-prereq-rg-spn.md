@@ -106,7 +106,6 @@ See :
 ```sh
 az keyvault secret list --vault-name $vault_name
 az keyvault secret show --name $vault_secret_name --vault-name $vault_name --output tsv
-az keyvault secret download --file myLostKey.txt --name $vault_secret_name --vault-name $vault_name
 
 ssh_prv_key_val=`cat ~/.ssh/$ssh_key`
 
@@ -117,5 +116,6 @@ az keyvault secret list --vault-name $vault_name
 az keyvault secret show --vault-name $vault_name --name ssh-passphrase -o table
 az keyvault secret show --vault-name $vault_name --name ssh-key -o table
 
-
+az keyvault secret download --file myLostKey.txt --name ssh-key --vault-name $vault_name
+az keyvault secret download --file myLostPassPhrase.txt --name ssh-passphrase --vault-name $vault_name
 ```
