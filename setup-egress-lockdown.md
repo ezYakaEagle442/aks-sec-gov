@@ -31,13 +31,13 @@ az network firewall application-rule create --collection-name $fw_app_collection
                                             "*.microsoftonline.com" "management.azure.com" \
                                             "*ubuntu.com" \
                                             "quay.io" "*.cloudfront.net" "k8s.gcr.io" \
-                                            #"*.alpinelinux.org" "security.debian.org" "deb.debian.org" "registry*.docker.io" "docker.io" "hub.docker.com" "production.cloudflare.docker.com" \
                                             "*.gk.${location}.azmk8s.io" "gov-prod-policy-data.trafficmanager.net" \
                                             "raw.githubusercontent.com" "dc.services.visualstudio.com" \
                                             "*.ods.opinsights.azure.com" "*.oms.opinsights.azure.com" "*.monitoring.azure.com" \
                                             "cloudflare.docker.com" "storage.googleapis.com" \
                                             --action allow --priority 100
-
+                                            #"*.alpinelinux.org" "security.debian.org" "deb.debian.org" "registry*.docker.io" "docker.io" "hub.docker.com" "production.cloudflare.docker.com"
+                                            
 az network firewall application-rule collection list --firewall-name $firewall_name -g $rg_fw_name
 
 # Add Network FW Rules
