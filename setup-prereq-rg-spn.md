@@ -94,7 +94,11 @@ ssh-keygen -y -f key1.pem > key1.pub
 
 ```
 
-Once the key is imported in KV, then az keyvault key download returns the public key only.
+KV stores both public part and private part of your key. Once you uploaded your key into KV, there is no way to show or download the private part: this is for security concern.
+Once the key is imported in KV, then az keyvault key download returns the public key only. 
+
+You can eventually save the private key key and also the passphrase as secrets in KV
+
 See :
 - this similar [topic & explanation regarding certificates](https://github.com/Azure/azure-sdk-for-js/issues/7647#issuecomment-594935307).
 - [https://github.com/MicrosoftDocs/azure-docs/issues/55072](https://github.com/MicrosoftDocs/azure-docs/issues/55072)
@@ -103,4 +107,15 @@ See :
 az keyvault secret list --vault-name $vault_name
 az keyvault secret show --name $vault_secret_name --vault-name $vault_name --output tsv
 az keyvault secret download --file myLostKey.txt --name $vault_secret_name --vault-name $vault_name
+
+ssh_prv_key_val=`cat ~/.ssh/$ssh_key`
+
+az keyvault secret set --name ssh-passphrase --value $ssh_passphrase --vault-name $vault_name --description "AKS ${appName} SSH Key Passphrase" 
+az keyvault secret set --name ssh-key --value "$ssh_prv_key_val" --vault-name $vault_name --description "AKS ${appName} SSH Private Key value" 
+
+az keyvault secret list --vault-name $vault_name
+az keyvault secret show --vault-name $vault_name --name ssh-passphrase -o table
+az keyvault secret show --vault-name $vault_name --name ssh-key -o table
+
+
 ```
