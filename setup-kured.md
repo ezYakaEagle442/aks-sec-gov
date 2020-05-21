@@ -10,14 +10,11 @@ See also :
 
 ```sh
 
-# Add the stable Helm repository
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
-
 # Update your local Helm chart repository cache
 helm repo update
 
 # Create a dedicated namespace where you would like to deploy kured into
-kubectl create namespace kured
+k create namespace kured
 
 # Install kured in that namespace with Helm 3 (only on Linux nodes, kured is not working on Windows nodes)
 # https://github.com/weaveworks/kured#setting-a-schedule
@@ -28,6 +25,9 @@ helm install kured stable/kured --namespace kured \
     --set extraArgs.start-time=9am \
     --set extraArgs.end-time=5pm \
     --set extraArgs.time-zone="Europe/Paris"
+
+helm ls --namespace kured
+helm status kured --namespace kured
 
 ```
 
