@@ -10,6 +10,7 @@ See also :
 - [https://docs.microsoft.com/en-us/azure/private-link/create-private-link-service-cli](https://docs.microsoft.com/en-us/azure/private-link/create-private-link-service-cli)
 - The KeyVault FlexVol solution is now deprecated in favor of [https://github.com/kubernetes-sigs/secrets-store-csi-driver](https://github.com/kubernetes-sigs/secrets-store-csi-driver)
 - [https://github.com/Azure/secrets-store-csi-driver-provider-azure](https://github.com/Azure/secrets-store-csi-driver-provider-azure)
+- [https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-managed-identities#azure-key-vault](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-managed-identities#azure-key-vault)
 
 ## Pre-requisites
 

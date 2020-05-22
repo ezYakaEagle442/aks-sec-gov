@@ -52,7 +52,7 @@ echo "AKS Cluster Identity Client ID " $aks_client_id
 az identity show --ids $PoolIdentityResourceID
 # you can see this App. in the portal / then in the AKS MC_ RG
 # https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
-# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-contributor
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor
 az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
 az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_name
 az role assignment create --role "Virtual Machine Contributor" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg

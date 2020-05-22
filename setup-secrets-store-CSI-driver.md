@@ -11,21 +11,13 @@ CSI driver provides the ability to [sync with Kubernetes secrets, which can then
 
 [Installing the Chart](https://github.com/Azure/secrets-store-csi-driver-provider-azure/blob/master/charts/csi-secrets-store-provider-azure/README.md)
 ```sh
-helm install csi-secrets-store-provider-azure/csi-secrets-store-provider-azure --generate-name -n $target_namespace
-helm ls -n $target_namespace 
-
+helm install csi-secrets-store-provider-azure csi-secrets-store-provider-azure/csi-secrets-store-provider-azure -n $target_namespace # --generate-name 
+helm ls -n $target_namespace -o yaml
+helm status csi-secrets-store-provider-azure -n $target_namespace
 ```
 
-# Create key-Vault
+# Create key-Vault Secret
 ```sh
-az group create --name $rg_kv_name --location $location
-az keyvault create --name $vault_name --enable-soft-delete true --location $location -g $rg_kv_name
-az keyvault show --name $vault_name 
-# az keyvault update --name $vault_name --default-action deny -g $rg_kv_name 
-
-kv_id=$(az keyvault show --name $vault_name -g $rg_kv_name --query "id" --output tsv)
-echo "KeyVault ID :" $kv_id
-nslookup $vault_name.vault.azure.net
 
 # https://docs.microsoft.com/en-us/cli/azure/keyvault/secret?view=azure-cli-latest#az-keyvault-secret-set
 az keyvault secret set --name $vault_secret_name --value $vault_secret --description "CSI driver ${appName} Secret" --vault-name $vault_name
@@ -38,8 +30,43 @@ az keyvault key show --name key1 --vault-name $vault_name
 
 aks_client_id=$(az aks show -g $rg_name -n $cluster_name --query identityProfile.kubeletidentity.clientId -o tsv)
 echo "AKS Cluster Identity Client ID " $aks_client_id
-az role assignment create --role Reader --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_kv_name/providers/Microsoft.KeyVault/vaults/$vault_name # $kv_id
+az role assignment create --role Reader --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$rg_name/providers/Microsoft.KeyVault/vaults/$vault_name # $kv_id
 
+```
+
+## Perform role assignments
+
+See [https://github.com/Azure/aad-pod-identity/blob/master/docs/readmes/README.role-assignment.md#performing-role-assignments](https://github.com/Azure/aad-pod-identity/blob/master/docs/readmes/README.role-assignment.md#performing-role-assignments)
+
+```sh
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#managed-identity-operator
+# https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#virtual-machine-contributor
+az role assignment create --role "Managed Identity Operator" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
+az role assignment create --role "Virtual Machine Contributor" --assignee $aks_client_id --scope /subscriptions/$subId/resourcegroups/$managed_rg
+```
+
+## Install AAD Pod Identity
+
+<span style="color:red">/!\ IMPORTANT </span> : For AKS clusters with limited egress-traffic, Please install pod-identity in kube-system namespace using the [helm charts](https://github.com/Azure/aad-pod-identity/tree/master/charts/aad-pod-identity).
+
+```sh
+helm install aad-pod-identity aad-pod-identity/aad-pod-identity -n $target_namespace --set azureIdentity.namespace=$target_namespace
+helm ls -n $target_namespace -o yaml
+helm status aad-pod-identity -n $target_namespace
+
+# k apply -f https://raw.githubusercontent.com/Azure/aad-pod-identity/master/deploy/infra/deployment-rbac.yaml
+k get crd -A
+k api-resources
+k describe ds aad-pod-identity-nmi -n $target_namespace 
+k get deployments -n $target_namespace 
+k get deployment aad-pod-identity-mic -n $target_namespace 
+k describe deployment aad-pod-identity-mic -n $target_namespace 
+k get pods -n $target_namespace 
+for pod in $(k get pods -l app.kubernetes.io/component=mic -n $target_namespace -o custom-columns=:metadata.name)
+do
+	k describe pod $pod -n $target_namespace # | grep -i "Error"
+	k logs $pod -n $target_namespace | grep -i "Error"
+done
 
 ```
 
@@ -65,6 +92,8 @@ az keyvault set-policy -n $vault_name --secret-permissions get --spn $IDENTITY_C
 # set policy to access certs in your keyvault
 az keyvault set-policy -n $vault_name --certificate-permissions get --spn $IDENTITY_CLIENT_ID
 
+tenantId=$(az account show --query tenantId -o tsv)
+
 export TENANT_ID=$tenantId
 export KV_NAME=$vault_name
 export SECRET_NAME=$vault_secret_name
@@ -74,7 +103,7 @@ envsubst < ./cnf/secrets-store-csi-provider-class.yaml > deploy/secrets-store-cs
 cat deploy/secrets-store-csi-provider-class.yaml
 k apply -f deploy/secrets-store-csi-provider-class.yaml -n $target_namespace
 k get secretproviderclasses -n $target_namespace
-k describe secretproviderclasses azure-kv-vsegov-xxx -n $target_namespace
+k describe secretproviderclasses azure-$KV_NAME-$POD_ID -n $target_namespace
 
 export ResourceID=$IDENTITY_RESOURCE_ID
 export ClientID=$IDENTITY_CLIENT_ID
@@ -88,16 +117,17 @@ k get azureassignedidentities -A
 
 k describe azureidentity $IDENTITY_NAME -n $target_namespace
 k describe azureidentitybinding $IDENTITY_NAME-binding -n $target_namespace
-k describe azureassignedidentities $IDENTITY_NAME -n $target_namespace
+k describe azureassignedidentities nginx-secrets-store-inline-$target_namespace-$IDENTITY_NAME -n $target_namespace
 
 envsubst < ./cnf/secrets-store-csi-demo-pod.yaml > deploy/secrets-store-csi-demo-pod.yaml
 cat deploy/secrets-store-csi-demo-pod.yaml
 k apply -f deploy/secrets-store-csi-demo-pod.yaml -n $target_namespace
-k get po -n $target_namespace
+k get po -n $target_namespace -o wide
 k get events -n $target_namespace | grep -i "Error" 
 k describe pod nginx-secrets-store-inline -n $target_namespace
+k get azureassignedidentities -A
+k describe azureassignedidentities nginx-secrets-store-inline-$target_namespace-$IDENTITY_NAME -n $target_namespace
 k logs nginx-secrets-store-inline -n $target_namespace
-
 
 vmss_name=$(az vmss list -g $managed_rg --query [0].name -o tsv)
 echo "VMSS name: " $vmss_name
