@@ -19,7 +19,7 @@ Internal application gateways use only private IP addresses. If you are using a 
 ***Note:***
 Application Gateway V1 supports public, private and public+private configuration. \
 Application Gateway V2 supports only public or public+private configuration. 
-Customers can lock the public IP from external traffic by not creating listeners on public IP which keeps all ports close. 
+Customers can lock the public IP from external traffic by not creating listeners on public IP which keeps all ports closed. 
 The management/control plane ports are required to be open on the public IP and can be locked down by using GatewayManager service tag.
 
 Only private IP configuration is in the roadmap , no ETA available at this time.
@@ -57,6 +57,7 @@ echo "WAF Policy id " $waf_policy_id
 
 az network application-gateway waf-policy policy-setting update --policy-name "${appName}-waf-policy" --mode Detection --state Enabled -g  $rg_name
 
+# https://docs.microsoft.com/en-us/azure/web-application-firewall/ag/application-gateway-web-application-firewall-portal
 az network application-gateway create --name $appgw_name \
                                       --resource-group $rg_name \
                                       --capacity 1 --min-capacity 1 --max-capacity 3  \
@@ -93,6 +94,18 @@ az network dns zone list -g $rg_name
 az network dns record-set a add-record -g $rg_name -z $custom_dns -n appgw -a $appgw_public_ip_address --ttl 300 # (300s = 5 minutes)
 az network dns record-set list -g $rg_name -z $custom_dns
 ```
+
+Troubleshoot:
+- in case of Error 502/503 : verify http settings ==> ***Host name*** 
+
+***Override with new host name*** MUST BE SET TO ***Yes***
+
+***Host name override*** MUST BE SET TO ***Pick host name from backend target***
+
+- Enable Diagnostic settings to send logs to Log Analytics
+- Create a Custom Probe the App. Home page (ex : complete path to /home/v2/login.html)
+
+
 
 create an Internal Ingress Controller, see [./build_java_app.md#create-petclinic-internal-ingress](./build_java_app.md#create-petclinic-internal-ingress)
 

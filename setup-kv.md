@@ -12,6 +12,9 @@ See also :
 - [https://github.com/Azure/secrets-store-csi-driver-provider-azure](https://github.com/Azure/secrets-store-csi-driver-provider-azure)
 - [https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-managed-identities#azure-key-vault](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-managed-identities#azure-key-vault)
 
+
+Azure Key Vault AAD Role Based Access Control (RBAC)  for Data Plane is a breaking change! 
+
 ## Pre-requisites
 
 [https://docs.microsoft.com/en-us/azure/key-vault/general/private-link-service#prerequisites](https://docs.microsoft.com/en-us/azure/key-vault/general/private-link-service#prerequisites)

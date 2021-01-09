@@ -44,6 +44,44 @@ watch ls &
 ```sh
 # https://chocolatey.org/packages/wsl
 choco install wsl --Yes --confirm --accept-license --verbose 
+choco install wsl-ubuntu-1804 --Yes --confirm --accept-license --verbose
+```
+
+
+## Upgrade to to WSL 2
+See [https://docs.microsoft.com/en-us/windows/wsl/install-win10#update-to-wsl-2](https://docs.microsoft.com/en-us/windows/wsl/install-win10#update-to-wsl-2)
+Pre-req: Windows 10, updated to version 2004, **Build 19041** or higher.
+
+```sh
+
+
+```
+
+## Setup PowerShell in WSL
+See :
+- [https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7#ubuntu-1804](https://docs.microsoft.com/fr-fr/powershell/scripting/install/installing-powershell-core-on-linux?view=powershell-7#ubuntu-1804)
+- [https://www.saggiehaim.net/powershell/install-powershell-7-on-wsl-and-ubuntu](https://www.saggiehaim.net/powershell/install-powershell-7-on-wsl-and-ubuntu)
+
+https://github.com/PowerShell/PowerShell/blob/master/docs/building/linux.md
+
+```sh
+# Download the Microsoft repository GPG keys
+wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb
+
+# Register the Microsoft repository GPG keys
+sudo dpkg -i packages-microsoft-prod.deb
+
+# Update the list of products
+sudo apt-get update
+
+# Enable the "universe" repositories
+sudo add-apt-repository universe
+
+# Install PowerShell
+sudo apt-get install -y powershell
+
+# restart WSL
+pwsh
 
 ```
 
@@ -69,6 +107,27 @@ kubectl api-versions
 choco install git.install --Yes --confirm --accept-license
 
 ```
+### Git Troubleshoot
+
+[https://www.illuminiastudios.com/dev-diaries/ssh-on-windows-subsystem-for-linux](https://www.illuminiastudios.com/dev-diaries/ssh-on-windows-subsystem-for-linux)
+[https://help.github.com/en/enterprise/2.20/user/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent](https://help.github.com/en/enterprise/2.20/user/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent)
+
+Check the fingerprint of you SSK key in GitHub with the SSH Key used by git.
+
+If your GIT repo URL starts with HTTPS (ex: "https://github.com/<!XXXyour-git-homeXXX!/spring-petclinic.git"), git CLI will always prompt for password.
+When MFA is enabled on GitHub and that you plan to use SSH Keys, you have to use: 
+git clone git@github.com:your-git-home/spring-petclinic.git
+
+```sh
+eval `ssh-agent -s`
+eval $(ssh-agent -s) 
+sudo service ssh status
+# sudo service ssh --full-restart
+ssh-add /home/~username/.ssh/githubkey
+ssh-keygen -l -E MD5 -f /home/~username/.ssh/githubkey
+ssh -T git@github.com
+```
+
 
 ## How to install AZ CLI with Chocolatey
 ```sh
@@ -76,7 +135,7 @@ choco install git.install --Yes --confirm --accept-license
 # do not install 2.2.0 as this is a requirement for AAD Integration : az ad app permission admin-consent
 # requires version min of 2.0.67 and max of 2.1.0.
 # AKS managed-identity requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity
-choco install azure-cli --Yes --confirm --accept-license --version 2.1.0 
+choco install azure-cli --Yes --confirm --accept-license --version 2.6.0
 ```
 
 ## You can use any tool to run SSH & AZ CLI
@@ -108,7 +167,7 @@ sudo apt-get update
 apt search azure-cli 
 apt-cache search azure-cli 
 apt list azure-cli -a
-sudo apt-get install azure-cli # azure-cli=2.5.0-1~bionic
+sudo apt-get install azure-cli # azure-cli=2.5.1-1~bionic 2.6.0-1~bionic
 
 # AKS managed-identity requires Azure CLI, version 2.2.0 or later : https://docs.microsoft.com/en-us/azure/aks/use-managed-identity
 # Azure CLi v2.3.0 released on 31/03/2020, see https://github.com/Azure/azure-cli/issues/12594 
@@ -135,6 +194,7 @@ choco install kubernetes-helm --Yes --confirm --accept-license
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
+# helm installed into /usr/local/bin/helm
 ```
 
 ## Kubectl-Windows-Linux-Shell

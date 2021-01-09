@@ -12,8 +12,8 @@
 
 See also [AKS creation of NodePools in different Subnets](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#add-a-node-pool-with-a-unique-subnet-preview)
 - [https://aka.ms/node-labels](https://aka.ms/node-labels)
-
-[Issue #1338](https://github.com/Azure/AKS/issues/1338) 
+- [Issue #1338](https://github.com/Azure/AKS/issues/1338) 
+- [https://github.com/Azure/AKS/issues/1500](https://github.com/Azure/AKS/issues/1500)
 
 ```sh
 
@@ -111,6 +111,8 @@ kubectl get nodes --show-labels
 
 ## Upgrades
 
+<span style="color:red">/!\ IMPORTANT </span> : The node pool OS image version is tied to the Kubernetes version of the cluster. You will only get OS image upgrades, following a cluster upgrade.
+
 [https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-node-pool](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-node-pool)
 [https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-cluster-control-plane-with-multiple-node-pools](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-cluster-control-plane-with-multiple-node-pools)
 ```sh
@@ -118,16 +120,17 @@ az aks nodepool list --cluster-name $cluster_name -g $rg_name
 
 az aks get-upgrades -g $rg_name --name $cluster_name
 
+# https://github.com/Azure/azure-cli/issues/14047
 az aks upgrade --control-plane-only \
     --name $cluster_name \
     --resource-group $rg_name \
-    --kubernetes-version 1.15.10
+    --kubernetes-version 1.15.10 --yes # Do not prompt for confirmation
 
 az aks nodepool upgrade \
     --resource-group $rg_name \
     --cluster-name $cluster_name \
     --name $poc_node_pool_name \
-    --kubernetes-version 1.15.10
+    --kubernetes-version 1.15.10 --yes # Do not prompt for confirmation
 
 
 ```

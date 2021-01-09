@@ -7,6 +7,12 @@ See also :
 - [https://feedback.azure.com/forums/914020-azure-kubernetes-service-aks/suggestions/35146387-support-non-interactive-login-for-aad-integrated-c](https://feedback.azure.com/forums/914020-azure-kubernetes-service-aks/suggestions/35146387-support-non-interactive-login-for-aad-integrated-c)
 - [https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#config)
 
+See also[Kube Login](https://github.com/Azure/kubelogin), a client-go credential plugin implementing Azure authentication, supported only with Managed AAD (V2). 
+This plugin provides features that are not available in kubectl :
+- non-interactive Service Principal login
+- non-interactive Managed Service identity login
+- AAD token will be cached locally for renewal in device code login and user principal login (ropc) flow. By default, it is saved in ~/.kube/cache/kubelogin
+
 ```sh
 
 kubectl create clusterrolebinding owner-cluster-admin-binding \
@@ -20,10 +26,11 @@ kubectl apply -f clusterRole.yaml
 sa_secret_name=$(kubectl get serviceaccount api-service-account  -o json | jq -Mr '.secrets[].name')
 echo "SA secret name " $sa_secret_name
 
-sa_secret_value=$(kubectl get secrets  $sa_secret_name -o json | jq -Mr '.data.token' | base64 -d)
+# Openshift Cheatsheet: https://gist.github.com/rafaeltuelho/111850b0db31106a4d12a186e1fbc53e
+sa_secret_value=$(oc get secrets  $sa_secret_name -o json | jq -Mr '.items[1].data.token' | base64 -d)
 echo "SA secret  " $sa_secret_value
 
-kube_url=$(kubectl get endpoints -o jsonpath='{.items[0].subsets[0].addresses[0].ip}')
+kube_url=$(oc get endpoints -n default -o jsonpath='{.items[0].subsets[0].addresses[0].ip}')
 echo "Kube URL " $kube_url
 
 curl -k  https://$kube_url/api/v1/namespaces -H "Authorization: Bearer $sa_secret_value"
@@ -56,6 +63,7 @@ kubectl config set-credentials $USER_NAME --token=$sa_secret_value
 see 
 - [https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/docker?view=azure-devops](https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/docker?view=azure-devops)
 - [https://devblogs.microsoft.com/devops/azure-devops-agents-on-azure-container-instances-aci/](https://devblogs.microsoft.com/devops/azure-devops-agents-on-azure-container-instances-aci/)
+- [https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-managed-identities#azure-container-instances](https://docs.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/services-support-managed-identities#azure-container-instances)
 
 [https://github.com/microsoft/azure-pipelines-image-generation](https://github.com/microsoft/azure-pipelines-image-generation) ==> Azure Pipelines Linux-based images are now in the virtual-environments repository
 

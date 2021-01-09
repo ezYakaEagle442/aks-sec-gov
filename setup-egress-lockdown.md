@@ -6,6 +6,7 @@ Read [https://docs.microsoft.com/en-us/azure/firewall/rule-processing](https://d
 
 - [https://docs.microsoft.com/en-us/azure/aks/limit-egress-traffic](https://docs.microsoft.com/en-us/azure/aks/limit-egress-traffic)
 - [https://docs.microsoft.com/en-us/azure/aks/egress-outboundtype](https://docs.microsoft.com/en-us/azure/aks/egress-outboundtype)
+- [https://aka.ms/azurefirewall-aks-fqdntag](https://aka.ms/azurefirewall-aks-fqdntag)
 
 MCR Endpoint evolution: 
 - [https://aka.ms/acr/cmk](https://aka.ms/acr/cmk)
@@ -38,6 +39,14 @@ az network firewall application-rule create --collection-name $fw_app_collection
                                             --action allow --priority 100
                                             #"*.alpinelinux.org" "security.debian.org" "deb.debian.org" "registry*.docker.io" "docker.io" "hub.docker.com" "production.cloudflare.docker.com"
                                             
+# From 01/12/2020
+Azure Policy is moving to a new CDN which require changes in the existing firewall rules (if you are using a firewall) for Azure Policy to continue to work. 
+We recommend you add these two rules to your firewall: 
+data.policy.core.windows.net HTTPS:443 
+store.policy.core.windows.net HTTPS:443 
+
+
+
 az network firewall application-rule collection list --firewall-name $firewall_name -g $rg_fw_name
 
 # Add Network FW Rules

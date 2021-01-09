@@ -10,7 +10,7 @@ helm get -h
 helm repo list
 
 # Init default repo: https://hub.helm.sh/charts
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm repo add stable https://kubernetes.github.io/ingress-nginx # old one : https://kubernetes-charts.storage.googleapis.com/
 helm repo list
 helm search repo
 helm search hub

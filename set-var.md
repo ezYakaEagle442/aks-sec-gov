@@ -28,8 +28,8 @@ echo "App DNS zone " $app_dns_zone
 custom_dns="akshandsonlabs.com"
 echo "Custom DNS is : " $custom_dns
 
-# target : version 1.16.7 to leverage secret store CSI driver Note: should be usually orchestrators[-1]
-version=$(az aks get-versions -l $location --query 'orchestrators[-2].orchestratorVersion' -o tsv) 
+# target : version 1.17.4 to leverage secret store CSI driver + Topology Feature    Note: should be usually orchestrators[-1]
+version=$(az aks get-versions -l $location --query 'orchestrators[-4].orchestratorVersion' -o tsv) 
 echo "version is :" $version 
 
 vault_secret="NoSugarNoStar" 
@@ -61,6 +61,9 @@ echo "Network Policy is : " $network_policy
 
 rg_name="rg-${appName}-${location}" 
 echo "AKS RG name:" $rg_name 
+
+cluster_rg_name="rg-managed-cluster-${appName}-${location}" 
+echo "AKS Cluster RG name:" $cluster_rg_name 
 
 rg_acr_name="rg-acr-${appName}-${location}" 
 echo "ACR RG name:" $rg_acr_name 

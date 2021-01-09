@@ -42,6 +42,7 @@ az feature list -o table --query "[?contains(name, 'Microsoft.PolicyInsights/AKS
 
 # Once the above shows 'Registered' run the following to propagate the update
 az provider register -n Microsoft.PolicyInsights
+# az provider unregister  -n Microsoft.PolicyInsights
 
 # az feature register --name AKSPrivateLinkPreview --namespace Microsoft.ContainerService
 # az feature list -o table --query "[?contains(name, 'Microsoft.ContainerService/AKSPrivateLinkPreview')].{Name:name,State:properties.state}"
@@ -82,6 +83,7 @@ To learn more about UDR, see [https://docs.microsoft.com/en-us/azure/virtual-net
 # small & cheap VM size : Basic_A1 or Standard_B1s or Standard_F2s_v2
 az aks create --name $cluster_name \
     --resource-group $rg_name \
+    --node-resource-group $ $cluster_rg_name \
     --aks-custom-headers CustomizedUbuntu=aks-ubuntu-1804 \
     --zones 1 2 3 \
     --enable-cluster-autoscaler \
@@ -195,7 +197,7 @@ prv_lnk_zone_guid="${aks_api_server_url_begin:$index:$url_begin_length}"
 echo "Private link zone GUID " $prv_lnk_zone_guid
 
 # Much simple and work with Mac : 
-prv_lnk_zone_guid=$(echo $aks_api_server_url | cut -d. -f2)
+prv_lnk_zone_guid=$(echo $aks_api_server_url | cut -d . -f2)
 
 az network private-dns link vnet list -g $managed_rg --zone-name "$prv_lnk_zone_guid.privatelink.${location}.azmk8s.io"
 
@@ -278,7 +280,8 @@ echo "Node0 IP : " $node0_IP
 
 # if SSH to AKS is broken, use the tool below (see https://portal.microsofticm.com/imp/v3/incidents/details/180571943/home)
 
-# try https://github.com/mohatb/kubectl-wls or https://github.com/kvaps/kubectl-node-shell 
+# try https://github.com/Azure/kubelogin#service-principal-login-flow-non-interactive (replaces https://github.com/mohatb/kubectl-wls or https://github.com/kvaps/kubectl-node-shell)
+# instead use https://github.com/Azure/kubelogin
 wget https://raw.githubusercontent.com/mohatb/kubectl-wls/master/kubectl-wls
 chmod +x ./kubectl-wls
 sudo mv ./kubectl-wls /usr/local/bin/kubectl-wls
@@ -547,6 +550,7 @@ kubectl run --restart=Never nginx-sre --image=nginx --namespace development
 kubectl get nodes
 
 # https://docs.microsoft.com/en-us/azure/aks/availability-zones#verify-node-distribution-across-zones
+# https://docs.microsoft.com/en-us/azure/aks/availability-zones#verify-pod-distribution-across-zones
 kubectl describe nodes | grep -e "Name:" -e "failure-domain.beta.kubernetes.io/zone"
 
 kubectl get pods
@@ -596,7 +600,8 @@ az monitor log-analytics workspace create -n $analytics_workspace_name --locatio
 az monitor log-analytics workspace list
 az monitor log-analytics workspace show -n $analytics_workspace_name -g $rg_name --verbose
 
-analytics_workspace_id=$(az monitor log-analytics workspace show -n $analytics_workspace_name -g $rg_name --query id)
+# -o tsv to manage quotes issues
+analytics_workspace_id=$(az monitor log-analytics workspace show -n $analytics_workspace_name -g $rg_name --query id -o tsv)
 echo "analytics_workspace_id:" $analytics_workspace_id
 
 # https://github.com/Azure/azure-cli/issues/9228

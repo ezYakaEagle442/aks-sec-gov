@@ -15,6 +15,8 @@ See also :
 
 - AKS [videos](https://azure.microsoft.com/en-us/resources/videos/index/?services=kubernetes-service&sort=newest)
 
+- [Azure Cloud Adoption Framework](https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/innovate/kubernetes)
+
 ![High-Level Architecture](./img/cloud-native-hld.png)
 
 1. Setup [Tools](tools.md) ~30 minutes

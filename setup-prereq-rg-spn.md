@@ -21,6 +21,24 @@ az storage account create --name $storage_name --kind StorageV2 --sku Standard_L
 
 # Create Service Principal
 
+## Ensure you have the appropriate Roles to be allowed to create a Service Principal
+
+[az ad group create CLI](https://docs.microsoft.com/en-us/cli/azure/ad/group?view=azure-cli-latest#az_ad_group_create)
+[az ad user create CLI](https://docs.microsoft.com/en-us/cli/azure/ad/user?view=azure-cli-latest#az_ad_user_create)
+[az ad group member add CLI](https://docs.microsoft.com/en-us/cli/azure/ad/group/member?view=azure-cli-latest#az_ad_group_member_add)
+[az role assignment create CLI](https://docs.microsoft.com/en-us/cli/azure/role/assignment?view=azure-cli-latest#az_role_assignment_create)
+
+
+Too much: [Application Administrator permission](https://docs.microsoft.com/en-us/azure/active-directory/roles/permissions-reference#application-administrator-permissions)
+[Application Developer permission is enough to create a Service Principal](https://docs.microsoft.com/en-us/azure/active-directory/roles/permissions-reference#application-developer-permissions)
+- microsoft.directory/servicePrincipals/create
+- microsoft.directory/applications/create
+- microsoft.directory/appRoleAssignments/create
+
+You could add roles to a Group, this is in PREVIEW in the [Portal](https://docs.microsoft.com/en-us/azure/active-directory/roles/groups-concept#required-license-plan) but this feature requires you to have an available Azure AD Premium P1 license in your Azure AD organization.
+
+
+## Create SP
 You do not need to create SPN when enabling managed-identity on AKS cluster.
 
 Read [https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal](https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal)

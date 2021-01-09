@@ -180,7 +180,7 @@ az network vnet subnet update --name ManagementSubnet --network-security-group $
 
 ```
 
-Now, choose either to use [Azure Bastion](#create-azure-bastion) or to create a [JumpBox](#optionally-create-a-jumpBox-vm)
+Now, choose either to use [Azure Bastion](#create-azure-bastion) or to create a [JumpOff VM](#optionally-create-a-jumpoff-vm)
 
 ### Create Azure Bastion
 
@@ -215,7 +215,7 @@ az network bastion list -g $rg_bastion_name --subscription $subId
 ```
 
 Now go to the section [§Setup VNet peering](#setup-VNet-peering)
-### Optionally Create a JumpBox VM
+### Optionally Create a JumpOff VM
 
 See
 - [https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes](https://docs.microsoft.com/en-us/azure/virtual-machines/windows/sizes)

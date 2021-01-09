@@ -7,6 +7,8 @@ Kured can now set a schedule: Kured [PR-66](https://github.com/weaveworks/kured/
 
 See also :
 - [https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-cluster-control-plane-with-multiple-node-pools](https://docs.microsoft.com/en-us/azure/aks/use-multiple-node-pools#upgrade-a-cluster-control-plane-with-multiple-node-pools)
+- [https://github.com/weaveworks/kured#setting-a-schedule](https://github.com/weaveworks/kured#setting-a-schedule)
+- [Reboot Sentinel File & Period](https://github.com/weaveworks/kured#reboot-sentinel-file--period) : By default kured checks for the existence of /var/run/reboot-required every sixty minutes; you can override these values with --reboot-sentinel and --period. Each replica of the daemon uses a random offset derived from the period on startup so that nodes don't all contend for the lock simultaneously.
 
 ```sh
 

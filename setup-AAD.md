@@ -15,6 +15,14 @@ See also
 Choose AAD Integration [V1](#aad-integration-v1) or [V2](#aad-integration-v2)
 Azure AD integration with AKS v2 is designed to simplify the Azure AD integration with AKS v1 experience, where users were required to create a client app, a server app, and required the **Azure AD tenant to grant Directory Read permissions**. In the new version, the AKS resource provider manages the client and server apps for you.
 
+
+See also[Kube Login](https://github.com/Azure/kubelogin), a client-go credential plugin implementing Azure authentication, supported only with Managed AAD (V2). 
+This plugin provides features that are not available in kubectl :
+- non-interactive Service Principal login
+- non-interactive Managed Service identity login
+- AAD token will be cached locally for renewal in device code login and user principal login (ropc) flow. By default, it is saved in ~/.kube/cache/kubelogin
+
+
 ## AAD Integration V2 
 
 (Currently in Preview)

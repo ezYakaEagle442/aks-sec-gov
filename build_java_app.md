@@ -35,6 +35,7 @@ echo -e "FROM mcr.microsoft.com/java/jre:11u6-zulu-alpine\n"\
 
 # other app snippet: https://github.com/microsoft/todo-app-java-on-azure/blob/master/deploy/aks/deployment.yml
 
+nslookup $acr_registry_name.azurecr.io
 docker_server=$(az acr show --name $acr_registry_name --resource-group $rg_name --query "loginServer" --output tsv)
 echo "Docker server :" $docker_server
 
@@ -72,7 +73,7 @@ echo "ACR Identity Principal ID " : $IdentityPrincipalID
 echo "ACR Identity Client ID " : $IdentityClientID
 
 # Create role assignment
-az role assignment create --assignee $IdentityPrincipalID --role acrpull --scope $acr_registry_id
+# az role assignment create --assignee $IdentityPrincipalID --role acrpull --scope $acr_registry_id
 
 az acr task credential add --name helloworld \
     --registry $acr_registry_name \
@@ -142,6 +143,10 @@ done
 # kubectl describe pod petclinic-YOUR-POD-ID -n $target_namespace
 # kubectl logs petclinic-YOUR-POD-ID -n $target_namespace
 # kubectl  exec -it "POD-UID" -n $target_namespace -- /bin/sh
+
+
+# https://docs.microsoft.com/en-us/azure/aks/availability-zones#verify-pod-distribution-across-zones
+k describe pod | grep -e "^Name:" -e "^Node
 
 ```
 
@@ -222,6 +227,7 @@ Then [configure DNS](#configure-DNS) ans test the URL access from a browser
 # ifconfig -a
 # hostname -I
 # host myip.opendns.com resolver1.opendns.com | grep "myip.opendns.com has address"
+myip=$(curl icanhazip.com)
 myip=$(dig +short myip.opendns.com @resolver1.opendns.com)
 
 export LB_FW_IP_RANGE="176.134.171.0/24"
@@ -271,6 +277,7 @@ If not already done, apply [HELM Setup](setup-helm.md)
 k create namespace ingress
 
 # https://docs.microsoft.com/en-us/azure/aks/ingress-basic
+# https://docs.microsoft.com/en-us/azure/aks/ingress-basic#create-an-ingress-controller 
 # https://www.nginx.com/products/nginx/kubernetes-ingress-controller
 # https://docs.nginx.com/nginx-ingress-controller/installation/installation-with-helm/
 # https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/
@@ -303,7 +310,7 @@ k get svc -n ingress
 k describe svc ingress-nginx-ingress-controller -n ingress
 k get ing -n ingress
 
-for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=:metadata.name)
+for s in $(k get svc -n ingress -l app=nginx-ingress -o custom-columns=NAME:.metadata.name)
 do
 	k describe svc $s -n ingress # | grep -i "Error"
 done
