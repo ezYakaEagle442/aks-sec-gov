@@ -11,6 +11,7 @@ The end goal is to take you from having a Kubernetes setup that is unsecure by d
  
 See also :
 
+- [Public and Private AKS Clusters Demystified](https://techcommunity.microsoft.com/t5/core-infrastructure-and-security/public-and-private-aks-clusters-demystified/ba-p/3716838)
 - This [Attack matrix for Kubernetes from Azure Security Center](https://www.microsoft.com/security/blog/2020/04/02/attack-matrix-kubernetes/)
 
 - AKS [videos](https://azure.microsoft.com/en-us/resources/videos/index/?services=kubernetes-service&sort=newest)
